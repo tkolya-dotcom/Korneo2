@@ -10600,26 +10600,19 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             if (prItemsList) {
                 const items = prItemsList.querySelectorAll('.pr-item');
                 items.forEach(item => {
-                    const text = item.textContent.toLowerCase();
-                    if (text.includes(filter)) {
-                        item.style.display = '';
-                    } else {
-                        item.style.display = 'none';
-                    }
+                    item.style.display = item.textContent.toLowerCase().includes(filter) ? '' : 'none';
                 });
             }
             
-            // Check in create form - filter by material name in select options
+            // Фильтрация select с материалами — пересобираем options из data-атрибута
+            // (option.style.display не работает в большинстве браузеров)
             const materialSelects = document.querySelectorAll('select[id$="Material"]');
             materialSelects.forEach(select => {
-                const options = select.querySelectorAll('option');
-                options.forEach(option => {
+                const allOptions = Array.from(select.querySelectorAll('option'));
+                allOptions.forEach(option => {
+                    if (!option.value) return; // пустой placeholder — не трогаем
                     const text = option.textContent.toLowerCase();
-                    if (filter === '' || text.includes(filter)) {
-                        option.style.display = '';
-                    } else {
-                        option.style.display = 'none';
-                    }
+                    option.hidden = filter !== '' && !text.includes(filter);
                 });
             });
         };
@@ -11688,16 +11681,20 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             const items = [];
             let i = 1;
             
-            while (document.getElementById('prItem' + i + 'Name')) {
-                const name = document.getElementById('prItem' + i + 'Name').value;
+            while (document.getElementById('prItem' + i + 'Material') || document.getElementById('prItem' + i + 'Name')) {
+                const nameInput = document.getElementById('prItem' + i + 'Name');
                 const materialSelect = document.getElementById('prItem' + i + 'Material');
                 const materialId = materialSelect ? materialSelect.value : null;
-                if (name) {
+                // Берём имя: либо введённое вручную, либо из выбранного материала
+                const selectedOption = materialSelect?.selectedOptions?.[0];
+                const nameFromSelect = selectedOption?.getAttribute('data-name') || selectedOption?.textContent?.split(' (')[0] || '';
+                const name = (nameInput?.value?.trim()) || (materialId ? nameFromSelect : '');
+                if (name || materialId) {
                     items.push({
-                        name,
-                        quantity: parseFloat(document.getElementById('prItem' + i + 'Qty').value) || 1,
-                        unit: document.getElementById('prItem' + i + 'Unit').value,
-                        note: document.getElementById('prItem' + i + 'Note').value,
+                        name: name || nameFromSelect,
+                        quantity: parseFloat(document.getElementById('prItem' + i + 'Qty')?.value) || 1,
+                        unit: document.getElementById('prItem' + i + 'Unit')?.value || 'pcs',
+                        note: document.getElementById('prItem' + i + 'Note')?.value || '',
                         material_id: materialId || null
                     });
                 }
