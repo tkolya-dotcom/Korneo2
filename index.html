@@ -7911,25 +7911,24 @@
                     items: (mrItems || []).filter(i => i.request_id === mr.id)
                 })).filter(mr => mr.items.length > 0);
                 
-                // Загружаем позиции заявок содержащие этот материал напрямую
+                // Прямой запрос позиций по material_id
                 const { data: prItems } = await supabaseClient
                     .from('purchase_request_items')
-                    .select('id, purchase_request_id, quantity, material_id')
-                    .eq('material_id', materialId);
+                    .select('id, purchase_request_id, name, quantity, unit, note, material_id')
+                    .eq('material_id', materialId)
+                    .limit(200);
 
-                // Получаем уникальные ID заявок
                 const prIds = [...new Set((prItems || []).map(i => i.purchase_request_id).filter(Boolean))];
                 
                 let allPurchaseRequests = [];
                 if (prIds.length > 0) {
                     const { data: prs } = await supabaseClient
                         .from('purchase_requests')
-                        .select('id, task_avr_id, task_id, installation_id, status, created_at')
+                        .select('id, task_avr_id, task_id, installation_id, status, created_at, receipt_address, short_id')
                         .in('id', prIds);
                     allPurchaseRequests = prs || [];
                 }
 
-                // Присоединяем позиции к заявкам
                 const purchaseRequests = allPurchaseRequests.map(pr => ({
                     ...pr,
                     items: (prItems || []).filter(i => i.purchase_request_id === pr.id)
@@ -10166,7 +10165,14 @@
             let itemsHtml = '';
             if (items && items.length > 0) {
                 items.forEach(item => {
-                    itemsHtml += `<div class="pr-item"><div><div class="pr-item-name">${item.name}</div>${item.note ? `<div style="font-size:12px;color:var(--text-muted)">${item.note}</div>` : ''}</div><div class="pr-item-qty">${item.quantity} ${item.unit}</div></div>`;
+                    itemsHtml += `<div class="pr-item">
+                        <div>
+                            <div class="pr-item-name">${item.name || '—'}</div>
+                            ${item.note ? `<div style="font-size:12px;color:var(--text-muted)">${item.note}</div>` : ''}
+                            ${item.material_id ? `<div style="font-size:11px;color:rgba(0,217,255,0.6)">Из справочника</div>` : ''}
+                        </div>
+                        <div class="pr-item-qty">${item.quantity} ${item.unit || 'шт'}</div>
+                    </div>`;
                 });
             }
 
@@ -10314,7 +10320,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                                 .from('warehouse')
                                 .update({
                                     quantity_available: (existingWarehouse.quantity_available || 0) + (item.quantity || 0),
-                                    updated_at: new Date().toISOString()
+                                    last_updated: new Date().toISOString()
                                 })
                                 .eq('id', existingWarehouse.id);
                         } else {
@@ -11735,13 +11741,14 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             
             try {
                 // Create the PR
+                // needsOrder=true → материала нет на складе → нужно согласование (pending)
+                // needsOrder=false → всё есть на складе → сразу готов к получению
                 const prData = {
-                    status: needsOrder ? 'ready_for_receipt' : 'pending',
+                    status: needsOrder ? 'pending' : 'ready_for_receipt',
                     created_by: currentUserProfile?.id
                 };
                 
-                // Если нужно заказать - устанавливаем адрес получения
-                if (needsOrder) {
+                if (!needsOrder) {
                     prData.receipt_address = 'Склад офис';
                 }
                 
@@ -11783,35 +11790,19 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                 
                 console.log('✅ PR created:', pr);
                 
-                // Add items
-                // Пробуем оба варианта имени FK колонки
+                // Вставляем позиции (реальная схема: purchase_request_id, name, quantity, unit, note, material_id)
                 const itemsWithPRId = items.map(item => ({
                     purchase_request_id: pr.id,
                     name: item.name || '',
                     quantity: item.quantity || 1,
                     unit: item.unit || 'pcs',
+                    note: item.note || null,
                     material_id: item.material_id || null
                 }));
                 
-                let { error: itemsError } = await supabaseClient
+                const { error: itemsError } = await supabaseClient
                     .from('purchase_request_items')
                     .insert(itemsWithPRId);
-                
-                // Если не сработало — пробуем с request_id
-                if (itemsError && itemsError.message?.includes('purchase_request_id')) {
-                    console.warn('purchase_request_id failed, trying request_id...');
-                    const itemsAlt = items.map(item => ({
-                        request_id: pr.id,
-                        name: item.name || '',
-                        quantity: item.quantity || 1,
-                        unit: item.unit || 'pcs',
-                        material_id: item.material_id || null
-                    }));
-                    const { error: itemsError2 } = await supabaseClient
-                        .from('purchase_request_items')
-                        .insert(itemsAlt);
-                    itemsError = itemsError2;
-                }
                 
                 if (itemsError) {
                     console.error('Items error:', JSON.stringify(itemsError));
@@ -11855,9 +11846,9 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                 if (modal) modal.remove();
                 
                 if (needsOrder) {
-                    showToast('✅ Заявка создана (готов к получению, Склад офис)');
+                    showToast('📋 Заявка отправлена на согласование');
                 } else {
-                    showToast('Заявка создана');
+                    showToast('✅ Заявка создана — материал есть на складе');
                 }
                 
                 // Обновляем текущий вид
