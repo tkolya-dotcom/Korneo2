@@ -11005,7 +11005,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                     // Search in both tables with only needed columns for display
                     const { data: addresses1, error: error1 } = await supabaseClient
                         .from('atss_q1_2026')
-                        .select('id_ploshadki, servisnyy_id, adres_razmeshcheniya, rayon, naimenovanie_sk1')
+                        .select('id_ploshadki, servisnyy_id, adres_razmeshcheniya, rayon, naimenovanie_sk')
                         .ilike('adres_razmeshcheniya', `%${query}%`)
                         .limit(5);
                     
@@ -11043,7 +11043,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                     uniqueAddresses.forEach((addr, index) => {
                         const addrId = 'addr-' + index + '-' + Date.now();
                         const address = addr.adres_razmeshcheniya || addr.adres_raspolozheniya || '';
-                        const skName = addr.naimenovanie_sk1 || '';
+                        const skName = addr.naimenovanie_sk || addr.naimenovanie_sk1 || '';
                         const rayon = addr.rayon || addr.ploshchadka || '';
                         const servisnyyId = addr.servisnyy_id || '';
                         
