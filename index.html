@@ -5057,7 +5057,12 @@
                 
             } catch (error) {
                 console.error('Dashboard load error:', error);
-                content.innerHTML = `<h2 style="margin-bottom: 16px">Главная</h2><div style="text-align:center;padding:40px;color:var(--danger)">Ошибка загрузки: ${error.message}</div>`;
+                const errMsg = error?.message || error?.details || JSON.stringify(error) || 'Unknown error';
+                content.innerHTML = `<h2 style="margin-bottom: 16px">Главная</h2>
+                    <div style="background:rgba(239,68,68,0.1);border:1px solid #ef4444;border-radius:8px;padding:16px;margin:16px 0">
+                        <div style="color:#ef4444;font-weight:600;margin-bottom:8px">⚠ Ошибка загрузки дашборда:</div>
+                        <div style="color:#fff;font-family:monospace;font-size:12px;word-break:break-all">${errMsg}</div>
+                    </div>`;
             }
         }
         
