@@ -11408,6 +11408,13 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             console.log('📦 showCreatePRModal called:', { type, refId, avrForm, pendingAVRData });
             prType = type;
             prRefId = refId;
+            // Сохраняем материалы глобально для autocomplete
+            window._prMaterials = (materials || []).map(m => ({
+                id: m.id,
+                name: m.name,
+                category: m.category || '',
+                unit: m.default_unit || 'шт'
+            }));
             
             // Загружаем материалы и склад
             const { data: materials } = await supabaseClient.from('materials').select('*').order('category').order('name');
@@ -11419,11 +11426,11 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                 warehouseMap[w.material_id] = w.quantity_available;
             });
             
-            // Добавляем информацию о складе к опциям материалов
+            // Datalist опции для autocomplete поиска
             const materialOptions = (materials || []).map(m => {
                 const warehouseQty = warehouseMap[m.id] || 0;
-                const warehouseInfo = warehouseQty > 0 ? ` | 📦 ${warehouseQty} на складе` : '';
-                return `<option value="${m.id}" data-name="${m.name}" data-unit="${m.default_unit}">${m.name} (${m.category}${warehouseInfo})</option>`;
+                const warehouseInfo = warehouseQty > 0 ? ` [📦${warehouseQty}]` : '';
+                return `<option value="${m.name} (${m.category}${warehouseInfo})" data-id="${m.id}" data-unit="${m.default_unit || 'шт'}">`;
             }).join('') || '';
             
             // Если передана форма АВР - заполняем данные из нее
@@ -11489,20 +11496,18 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                                 ${installationOptions}
                             </select>
                         </div>
-                        <div class="form-group" style="margin-bottom:16px">
-                            <input type="text" id="prItemsSearch" placeholder="Поиск по позициям..." onkeyup="filterPRItems()" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:#fff">
-                        </div>
                         <div id="prItems">
+                            <datalist id="prMaterialsList">${materialOptions}</datalist>
                             <div class="form-group" style="margin-bottom:16px">
                                 <label style="display:block;margin-bottom:8px;color:#fff;font-weight:500">Позиция 1 - Материал</label>
-                                <select id="prItem1Material" onchange="handleMaterialSelect(1)" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:#fff">
-                                    <option value="">-- Выберите материал --</option>
-                                    ${materialOptions}
-                                </select>
-                            </div>
-                            <div class="form-group" style="margin-bottom:16px">
-                                <label style="display:block;margin-bottom:8px;color:#fff;font-weight:500">Название (если свое)</label>
-                                <input type="text" id="prItem1Name" placeholder="Свое название" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:#fff">
+                                <input type="text" id="prItem1Search" list="prMaterialsList"
+                                    placeholder="Начните вводить название..."
+                                    oninput="prMaterialInput(1, this.value)"
+                                    autocomplete="off"
+                                    style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:#fff;box-sizing:border-box">
+                                <input type="hidden" id="prItem1Material" data-unit="">
+                                <input type="text" id="prItem1Name" placeholder="Своё название (если нет в списке)"
+                                    style="width:100%;padding:8px 10px;margin-top:6px;border-radius:8px;border:1px dashed rgba(255,255,255,0.15);background:rgba(255,255,255,0.03);color:#aaa;font-size:13px;box-sizing:border-box">
                             </div>
                             <div style="display:flex;gap:8px;margin-bottom:16px">
                                 <div class="form-group" style="flex:1">
@@ -11607,14 +11612,23 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
         }
         
         window.handleMaterialSelect = function(itemNum) {
-            const select = document.getElementById('prItem' + itemNum + 'Material');
-            const nameInput = document.getElementById('prItem' + itemNum + 'Name');
-            const unitSelect = document.getElementById('prItem' + itemNum + 'Unit');
-            
-            if (select && select.selectedOptions[0]) {
-                const option = select.selectedOptions[0];
-                if (nameInput && !nameInput.value) nameInput.value = option.getAttribute('data-name');
-                if (unitSelect && option.getAttribute('data-unit')) unitSelect.value = option.getAttribute('data-unit');
+            // Legacy — оставляем для совместимости
+        };
+
+        window.prMaterialInput = function(itemNum, val) {
+            // Ищем материал в глобальном массиве по введённому тексту
+            const mats = window._prMaterials || [];
+            const found = mats.find(m => val.startsWith(m.name));
+            const hiddenInput = document.getElementById('prItem' + itemNum + 'Material');
+            const unitSelect  = document.getElementById('prItem' + itemNum + 'Unit');
+            const nameInput   = document.getElementById('prItem' + itemNum + 'Name');
+            if (found) {
+                if (hiddenInput) { hiddenInput.value = found.id; hiddenInput.dataset.unit = found.unit; }
+                if (unitSelect)  unitSelect.value = found.unit;
+                if (nameInput)   nameInput.value = '';   // очищаем ручное поле — выбран из списка
+            } else {
+                if (hiddenInput) { hiddenInput.value = ''; hiddenInput.dataset.unit = ''; }
+                if (nameInput && !nameInput.value) nameInput.value = val; // ручной ввод
             }
         };
         
@@ -11643,10 +11657,12 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                 <hr style="margin:16px 0">
                 <div class="form-group">
                     <label>Позиция ${count} - Материал</label>
-                    <select id="prItem${count}Material" onchange="handleMaterialSelect(${count})">
-                        <option value="">-- Выберите материал --</option>
-                        ${materialOptions}
-                    </select>
+                    <input type="text" id="prItem${count}Search" list="prMaterialsList"
+                        placeholder="Начните вводить название..."
+                        oninput="prMaterialInput(${count}, this.value)"
+                        autocomplete="off"
+                        style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:#fff;box-sizing:border-box">
+                    <input type="hidden" id="prItem${count}Material" data-unit="">
                 </div>
                 <div class="form-group">
                     <label>Название (если свое)</label>
@@ -11682,16 +11698,18 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             let i = 1;
             
             while (document.getElementById('prItem' + i + 'Material') || document.getElementById('prItem' + i + 'Name')) {
-                const nameInput = document.getElementById('prItem' + i + 'Name');
-                const materialSelect = document.getElementById('prItem' + i + 'Material');
-                const materialId = materialSelect ? materialSelect.value : null;
-                // Берём имя: либо введённое вручную, либо из выбранного материала
-                const selectedOption = materialSelect?.selectedOptions?.[0];
-                const nameFromSelect = selectedOption?.getAttribute('data-name') || selectedOption?.textContent?.split(' (')[0] || '';
-                const name = (nameInput?.value?.trim()) || (materialId ? nameFromSelect : '');
+                const nameInput   = document.getElementById('prItem' + i + 'Name');
+                const materialHidden = document.getElementById('prItem' + i + 'Material');
+                const searchInput = document.getElementById('prItem' + i + 'Search');
+                const materialId  = materialHidden ? materialHidden.value : null;
+                // Имя: вручную → из поиска → из массива по id
+                const mats = window._prMaterials || [];
+                const foundMat = materialId ? mats.find(m => m.id === materialId) : null;
+                const nameFromSearch = searchInput?.value?.split(' (')[0]?.trim() || '';
+                const name = nameInput?.value?.trim() || (foundMat ? foundMat.name : nameFromSearch);
                 if (name || materialId) {
                     items.push({
-                        name: name || nameFromSelect,
+                        name: name || (foundMat ? foundMat.name : ''),
                         quantity: parseFloat(document.getElementById('prItem' + i + 'Qty')?.value) || 1,
                         unit: document.getElementById('prItem' + i + 'Unit')?.value || 'pcs',
                         note: document.getElementById('prItem' + i + 'Note')?.value || '',
