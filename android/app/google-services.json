@@ -7,7 +7,7 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:884674213029:android:korneo001",
+        "mobilesdk_app_id": "1:884674213029:android:f0166b2a87742e4777894c",
         "android_client_info": {
           "package_name": "com.korneo.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAM3t4qBtb2FhUElkWvKbEF4Oui2I9rZGk"
+          "current_key": "AIzaSyDs_gbSwUs68180fVTeylVEfoK04k9wm70"
         }
       ],
       "services": {
