@@ -10132,6 +10132,8 @@
             const pr = prResult.data;
             if (!pr) { closeModal(); return; }
             const items = itemsResult.data || [];
+            console.log('📦 PR items loaded:', items.length, 'items for PR', prId, items);
+            if (itemsResult.error) console.error('📦 Items error:', itemsResult.error);
             
             // Collect IDs for batch query
             const userIds = [pr.created_by, pr.approved_by].filter(Boolean);
@@ -10310,8 +10312,9 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                     .eq('purchase_request_id', prId);
                 
                 if (items && items.length > 0) {
-                    // Добавляем каждую позицию на склад
+                    // Добавляем каждую позицию на склад (только если есть material_id)
                     for (const item of items) {
+                        if (!item.material_id) continue; // пропускаем позиции без привязки к справочнику
                         // Проверяем есть ли уже такой материал на складе
                         const { data: existingWarehouse } = await supabaseClient
                             .from('warehouse')
@@ -10337,8 +10340,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                                     quantity_available: item.quantity || 0,
                                     quantity_reserved: 0,
                                     location: 'Получено из заявки #' + prId.slice(0, 8),
-                                    created_at: new Date().toISOString(),
-                                    updated_at: new Date().toISOString()
+                                    last_updated: new Date().toISOString()
                                 }]);
                         }
                     }
@@ -10406,7 +10408,14 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             if (items.length === 0) { showToast('Добавьте хотя бы одну позицию'); return; }
             try {
                 await supabaseClient.from('purchase_request_items').delete().eq('purchase_request_id', prId);
-                await supabaseClient.from('purchase_request_items').insert(items.map(item => ({ purchase_request_id: prId, ...item })));
+                await supabaseClient.from('purchase_request_items').insert(items.map(item => ({
+                        purchase_request_id: prId,
+                        name: item.name || '',
+                        quantity: item.quantity || 1,
+                        unit: item.unit || 'pcs',
+                        note: item.note || null,
+                        material_id: item.material_id || null
+                    })));
                 await supabaseClient.from('purchase_requests').update({ status: 'pending', comment: null, updated_at: new Date().toISOString() }).eq('id', prId);
                 closeModal();
                 showToast('Заявка отправлена на рассмотрение');
@@ -10461,7 +10470,14 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             if (items.length === 0) { showToast('Добавьте хотя бы одну позицию'); return; }
             try {
                 await supabaseClient.from('purchase_request_items').delete().eq('purchase_request_id', prId);
-                await supabaseClient.from('purchase_request_items').insert(items.map(item => ({ purchase_request_id: prId, ...item })));
+                await supabaseClient.from('purchase_request_items').insert(items.map(item => ({
+                        purchase_request_id: prId,
+                        name: item.name || '',
+                        quantity: item.quantity || 1,
+                        unit: item.unit || 'pcs',
+                        note: item.note || null,
+                        material_id: item.material_id || null
+                    })));
                 await supabaseClient.from('purchase_requests').update({ status: 'pending', comment: null, updated_at: new Date().toISOString() }).eq('id', prId);
                 closeModal();
                 showToast('Заявка отправлена на рассмотрение');
