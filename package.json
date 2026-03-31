@@ -1,7 +1,7 @@
 {
-  "name": "task-manager-app",
+  "name": "korneo-app",
   "version": "1.0.0",
-  "description": "ООО Корнео - Система Управления Задачами и Монтажами",
+  "description": "ООО Корнео — мобильное приложение",
   "main": "index.html",
   "scripts": {
     "start": "npx http-server -p 8080 -c-1",
@@ -21,7 +21,13 @@
   ],
   "author": "ООО Корнео",
   "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor-firebase/messaging": "^6.0.0"
+  },
   "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
     "web-push": "^3.6.7",
     "http-server": "^14.1.1",
     "live-server": "^1.2.2",
