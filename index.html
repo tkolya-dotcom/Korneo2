@@ -2792,7 +2792,154 @@
                 padding: 24px 16px;
             }
         }
-    </style>
+    
+        /* ========================================
+           ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ
+           ======================================== */
+        .profile-page { max-width: 480px; margin: 0 auto; padding-bottom: 40px; }
+
+        .profile-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 32px 20px 24px;
+            background: var(--gradient-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .profile-avatar-wrap {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .profile-avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--accent);
+            box-shadow: 0 0 20px rgba(0,217,255,0.3);
+        }
+
+        .profile-avatar-letter {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--glow));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-family: 'Orbitron', sans-serif;
+            color: var(--primary);
+            font-weight: 700;
+            border: 3px solid var(--accent);
+            box-shadow: 0 0 20px rgba(0,217,255,0.3);
+        }
+
+        .profile-avatar-edit {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: var(--primary);
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+
+        .profile-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            color: var(--text);
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .profile-role {
+            font-size: 13px;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+
+        .profile-email {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .profile-field {
+            background: var(--gradient-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .profile-field label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .profile-field-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .profile-field input {
+            flex: 1;
+            background: rgba(10,10,15,0.6);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 15px;
+            padding: 8px 12px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .profile-field input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 8px rgba(0,217,255,0.2);
+        }
+
+        .profile-field input[readonly] {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        .profile-save-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent), var(--glow));
+            color: var(--primary);
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            font-family: 'Orbitron', sans-serif;
+            transition: opacity 0.2s;
+        }
+
+        .profile-save-btn:hover { opacity: 0.85; }
+        .profile-save-btn:disabled { opacity: 0.5; cursor: default; }
+</style>
 </head>
 <body>
     <!-- Auth Screen -->
@@ -2856,7 +3003,7 @@
             </div>
             <div style="display:flex;gap:8px;align-items:center">
 
-                <button class="logout-btn" id="infoBtn" title="Информация">ℹ</button>
+                <button class="logout-btn" id="infoBtn" title="Мой профиль">👤</button>
                 <button class="logout-btn" id="logoutBtn">Выход</button>
             </div>
         </div>
@@ -4493,6 +4640,11 @@
             const roleLabel = roleLabelMap[currentUserProfile?.role] || 'Пользователь';
             document.getElementById('headerTitle').textContent = currentUserProfile?.name || 'Пользователь';
             document.getElementById('headerUser').textContent = '> ' + roleLabel;
+            // Обновляем иконку профиля если есть аватар
+            const _infoBtnEl = document.getElementById('infoBtn');
+            if (_infoBtnEl && currentUserProfile?.avatar_url) {
+                _infoBtnEl.innerHTML = `<img src="${currentUserProfile.avatar_url}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;vertical-align:middle" onerror="this.outerHTML='👤'">`;
+            }
             
             // Initialize push notifications
             initNotifications();
@@ -4789,6 +4941,9 @@
                         break;
                     case 'calendar':
                         await renderCalendar(content);
+                        break;
+                    case 'profile':
+                        await renderProfile(content);
                         break;
                     case 'info':
                         await renderInfo(content);
@@ -15453,6 +15608,201 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
         // ============================================================
         // INFO PAGE
         // ============================================================
+
+        // ============================================================
+        // ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ
+        // ============================================================
+
+        async function renderProfile(container) {
+            const u = currentUserProfile;
+            if (!u) return;
+
+            const roleNames = {
+                manager: 'Руководитель', deputy_head: 'Зам. начальника',
+                worker: 'Исполнитель', engineer: 'Инженер', support: 'Техподдержка'
+            };
+
+            // Загружаем актуальные данные пользователя
+            const { data: userData } = await supabaseClient
+                .from('users')
+                .select('id, name, email, role, phone, avatar_url, created_at')
+                .eq('id', u.id)
+                .single();
+
+            const user = userData || u;
+            const firstLetter = (user.name || 'U').charAt(0).toUpperCase();
+            const roleName = roleNames[user.role] || user.role;
+
+            const avatarHtml = user.avatar_url
+                ? `<img src="${user.avatar_url}" class="profile-avatar" alt="avatar" onerror="this.outerHTML='<div class=\"profile-avatar-letter\">${firstLetter}</div>'">`
+                : `<div class="profile-avatar-letter">${firstLetter}</div>`;
+
+            container.innerHTML = `
+                <div class="profile-page">
+                    <h2 style="margin-bottom:16px">👤 Мой профиль</h2>
+
+                    <!-- Шапка с аватаром -->
+                    <div class="profile-header">
+                        <div class="profile-avatar-wrap">
+                            <div id="profileAvatarDisplay">${avatarHtml}</div>
+                            <button class="profile-avatar-edit" onclick="document.getElementById('avatarFileInput').click()" title="Сменить фото">✏</button>
+                            <input type="file" id="avatarFileInput" accept="image/*" style="display:none" onchange="uploadProfileAvatar(this)">
+                        </div>
+                        <div class="profile-name">${user.name || '—'}</div>
+                        <div class="profile-role">${roleName}</div>
+                        <div class="profile-email">${user.email || ''}</div>
+                    </div>
+
+                    <!-- Телефон -->
+                    <div class="profile-field">
+                        <label>📱 Номер телефона</label>
+                        <div class="profile-field-row">
+                            <input type="tel" id="profilePhone"
+                                   value="${user.phone || ''}"
+                                   placeholder="+7 (___) ___-__-__">
+                        </div>
+                    </div>
+
+                    <!-- Имя (только для просмотра) -->
+                    <div class="profile-field">
+                        <label>👤 Имя</label>
+                        <div class="profile-field-row">
+                            <input type="text" id="profileName"
+                                   value="${user.name || ''}"
+                                   placeholder="Имя">
+                        </div>
+                    </div>
+
+                    <!-- Email (readonly) -->
+                    <div class="profile-field">
+                        <label>✉ Email</label>
+                        <div class="profile-field-row">
+                            <input type="text" value="${user.email || ''}" readonly>
+                        </div>
+                    </div>
+
+                    <!-- Роль (readonly) -->
+                    <div class="profile-field">
+                        <label>🎖 Роль</label>
+                        <div class="profile-field-row">
+                            <input type="text" value="${roleName}" readonly>
+                        </div>
+                    </div>
+
+                    <!-- Дата регистрации -->
+                    <div class="profile-field">
+                        <label>📅 В системе с</label>
+                        <div class="profile-field-row">
+                            <input type="text" value="${user.created_at ? new Date(user.created_at).toLocaleDateString('ru-RU') : '—'}" readonly>
+                        </div>
+                    </div>
+
+                    <button class="profile-save-btn" id="profileSaveBtn" onclick="saveProfileData()">
+                        💾 Сохранить
+                    </button>
+                </div>
+            `;
+        }
+
+        // Сохранить телефон и имя
+        window.saveProfileData = async function() {
+            const btn = document.getElementById('profileSaveBtn');
+            const phone = document.getElementById('profilePhone')?.value?.trim() || null;
+            const name  = document.getElementById('profileName')?.value?.trim();
+
+            if (!name) { showToast('Введите имя'); return; }
+
+            btn.disabled = true;
+            btn.textContent = 'Сохраняю…';
+
+            try {
+                const { error } = await supabaseClient
+                    .from('users')
+                    .update({ phone, name, updated_at: new Date().toISOString() })
+                    .eq('id', currentUserProfile.id);
+
+                if (error) throw error;
+
+                // Обновляем локальный профиль
+                currentUserProfile.name = name;
+                currentUserProfile.phone = phone;
+
+                // Обновляем шапку
+                document.getElementById('headerUser') && 
+                    (document.getElementById('headerUser').textContent = '> ' + 
+                        ({ manager:'Руководитель', deputy_head:'Зам. начальника',
+                           worker:'Исполнитель', engineer:'Инженер', support:'Техподдержка' }
+                        [currentUserProfile.role] || 'Пользователь'));
+
+                showToast('✅ Профиль сохранён');
+                btn.textContent = '✅ Сохранено';
+                setTimeout(() => { btn.disabled = false; btn.textContent = '💾 Сохранить'; }, 2000);
+
+            } catch (err) {
+                console.error('saveProfileData error:', err);
+                showToast('Ошибка: ' + err.message);
+                btn.disabled = false;
+                btn.textContent = '💾 Сохранить';
+            }
+        };
+
+        // Загрузка аватара в Supabase Storage
+        window.uploadProfileAvatar = async function(input) {
+            const file = input.files?.[0];
+            if (!file) return;
+
+            // Проверяем размер (макс 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('Файл слишком большой (макс. 2MB)');
+                return;
+            }
+
+            showToast('⏳ Загружаем фото…');
+
+            try {
+                const ext  = file.name.split('.').pop();
+                const path = `${currentUserProfile.id}.${ext}`;
+
+                // Загружаем в bucket 'avatars'
+                const { error: upErr } = await supabaseClient.storage
+                    .from('avatars')
+                    .upload(path, file, { upsert: true, contentType: file.type });
+
+                if (upErr) throw upErr;
+
+                // Получаем публичный URL
+                const { data: urlData } = supabaseClient.storage
+                    .from('avatars')
+                    .getPublicUrl(path);
+
+                const avatar_url = urlData.publicUrl + '?t=' + Date.now();
+
+                // Сохраняем URL в профиль
+                const { error: dbErr } = await supabaseClient
+                    .from('users')
+                    .update({ avatar_url, updated_at: new Date().toISOString() })
+                    .eq('id', currentUserProfile.id);
+
+                if (dbErr) throw dbErr;
+
+                currentUserProfile.avatar_url = avatar_url;
+
+                // Обновляем аватар на странице
+                const display = document.getElementById('profileAvatarDisplay');
+                if (display) {
+                    display.innerHTML = `<img src="${avatar_url}" class="profile-avatar" alt="avatar">`;
+                }
+
+                showToast('✅ Фото обновлено');
+
+            } catch (err) {
+                console.error('uploadProfileAvatar error:', err);
+                showToast('Ошибка загрузки: ' + err.message);
+            }
+
+            input.value = ''; // сбрасываем input
+        };
+
         async function renderInfo(content) {
             const role = currentUserProfile?.role || 'worker';
             const roleNames = {
@@ -16755,7 +17105,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                 infoBtn.addEventListener('click', function(e) {
                     console.log('🔘 Info button clicked!');
                     e.preventDefault();
-                    navigate('info');
+                    navigate('profile');
                 });
                 console.log('✅ Info handler attached');
             }
