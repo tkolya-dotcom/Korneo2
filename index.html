@@ -664,38 +664,40 @@
                 display: none;
             }
 
+            /* ── Top navigation bar (mobile) ── */
             .mobile-nav-bar {
                 display: flex;
                 position: fixed;
-                bottom: 0;
+                top: 0;
                 left: 0;
                 right: 0;
                 z-index: 1000;
-                background: rgba(17,17,21,0.97);
+                background: rgba(11,11,15,0.97);
                 backdrop-filter: blur(20px);
                 -webkit-backdrop-filter: blur(20px);
-                border-top: 1px solid rgba(0,217,255,0.12);
-                padding-bottom: env(safe-area-inset-bottom, 0);
+                border-bottom: 1px solid rgba(0,217,255,0.14);
+                padding-top: env(safe-area-inset-top, 0);
                 overflow-x: auto;
                 scrollbar-width: none;
                 -ms-overflow-style: none;
                 gap: 0;
+                box-shadow: 0 2px 16px rgba(0,0,0,0.4);
             }
             .mobile-nav-bar::-webkit-scrollbar { display: none; }
 
             .mobile-nav-bar .mnb-btn {
                 flex: 0 0 auto;
-                min-width: 56px;
+                min-width: 64px;           /* +15% от 56px */
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 2px;
-                padding: 8px 10px 6px;
+                gap: 3px;
+                padding: 9px 11px 7px;     /* +15% от 8/10/6 */
                 background: transparent;
                 border: none;
                 color: var(--text-muted);
-                font-size: 9px;
+                font-size: 10px;            /* +15% от 9px */
                 font-family: 'Inter', sans-serif;
                 cursor: pointer;
                 position: relative;
@@ -704,12 +706,12 @@
                 white-space: nowrap;
             }
             .mobile-nav-bar .mnb-btn .mnb-icon {
-                font-size: 20px;
+                font-size: 23px;            /* +15% от 20px */
                 line-height: 1;
                 transition: transform 0.15s;
             }
             .mobile-nav-bar .mnb-btn .mnb-label {
-                font-size: 9px;
+                font-size: 10px;            /* +15% от 9px */
                 line-height: 1;
             }
             .mobile-nav-bar .mnb-btn.active {
@@ -717,7 +719,7 @@
             }
             .mobile-nav-bar .mnb-btn.active .mnb-icon {
                 transform: translateY(-1px);
-                filter: drop-shadow(0 0 4px var(--accent));
+                filter: drop-shadow(0 0 5px var(--accent));
             }
             .mobile-nav-bar .mnb-btn::after {
                 content: '';
@@ -725,7 +727,7 @@
                 bottom: 0;
                 left: 50%;
                 transform: translateX(-50%) scaleX(0);
-                width: 24px;
+                width: 28px;               /* +15% от 24px */
                 height: 2px;
                 background: var(--accent);
                 border-radius: 2px 2px 0 0;
@@ -736,28 +738,33 @@
             }
             .mobile-nav-bar .mnb-badge {
                 position: absolute;
-                top: 5px;
+                top: 6px;
                 right: 50%;
-                transform: translateX(8px);
+                transform: translateX(10px);
                 background: #EF4444;
                 color: #fff;
-                font-size: 9px;
+                font-size: 10px;
                 font-weight: 700;
-                min-width: 15px;
-                height: 15px;
-                border-radius: 8px;
+                min-width: 17px;
+                height: 17px;
+                border-radius: 9px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 padding: 0 3px;
-                border: 1.5px solid #111115;
+                border: 1.5px solid #0B0B0F;
             }
 
-            /* Add bottom padding to content so it doesn't hide behind nav bar */
+            /* Push content down below top nav bar (~70px + safe-area-top) */
             .container {
-                padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+                padding-top: calc(70px + env(safe-area-inset-top, 0px));
+                padding-bottom: env(safe-area-inset-bottom, 0px);
             }
-            /* Messenger page — no extra padding (has its own layout) */
+            /* Hide desktop header — top nav bar replaces it on mobile */
+            .header {
+                display: none;
+            }
+            /* Messenger page */
             .messenger-page {
                 padding-bottom: 0 !important;
             }
@@ -2269,7 +2276,7 @@
         @media (max-width: 768px) {
             .messenger-wrap {
                 flex-direction: column;
-                height: calc(100dvh - 130px - 58px - env(safe-area-inset-bottom, 0px));
+                height: calc(100dvh - 130px - 70px - env(safe-area-inset-top, 0px));
                 border-radius: 12px;
             }
             .msg-sidebar {
