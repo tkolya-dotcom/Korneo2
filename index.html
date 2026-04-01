@@ -8083,6 +8083,375 @@
             content.innerHTML = html;
         }
 
+
+        // ============================================================
+        // ВЫДАЧА МАТЕРИАЛОВ СО СКЛАДА
+        // ============================================================
+
+        window.showIssueModal = async function() {
+            // Загружаем материалы на складе (только с остатком > 0)
+            const { data: warehouseItems } = await supabaseClient
+                .from('warehouse')
+                .select('material_id, quantity_available')
+                .gt('quantity_available', 0);
+
+            const materialIds = (warehouseItems || []).map(w => w.material_id).filter(Boolean);
+            if (materialIds.length === 0) {
+                showToast('На складе нет материалов в наличии');
+                return;
+            }
+
+            const { data: materials } = await supabaseClient
+                .from('materials')
+                .select('id, name, category, default_unit')
+                .in('id', materialIds)
+                .order('category').order('name');
+
+            const { data: users } = await supabaseClient
+                .from('users')
+                .select('id, name, role')
+                .order('name');
+
+            const { data: avrTasks } = await supabaseClient
+                .from('tasks_avr')
+                .select('id, title, type, short_id')
+                .not('status', 'in', '(done,archived)')
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            // Карта остатков
+            const stockMap = {};
+            (warehouseItems || []).forEach(w => { stockMap[w.material_id] = w.quantity_available; });
+
+            // Сохраняем карту материалов глобально
+            window._issueMatMap = {};
+            (materials || []).forEach(m => {
+                window._issueMatMap[m.id] = { ...m, stock: stockMap[m.id] || 0 };
+            });
+            const matOptions = (materials || []).map(m =>
+                `<option value="${m.name} (${m.category}) — ${stockMap[m.id] || 0} ${m.default_unit || 'шт'}" data-id="${m.id}" data-unit="${m.default_unit || 'шт'}" data-stock="${stockMap[m.id] || 0}">`
+            ).join('');
+
+            const userOptions = (users || []).map(u =>
+                `<option value="${u.id}">${u.name}</option>`
+            ).join('');
+
+            const avrOptions = `<option value="">— не указано —</option>` +
+                (avrTasks || []).map(t =>
+                    `<option value="${t.id}">#${t.short_id || ''} ${t.type} — ${t.title}</option>`
+                ).join('');
+
+            const modal = document.createElement('div');
+            modal.id = 'issueModal';
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:3500;display:flex;align-items:flex-end;justify-content:center;padding:0';
+
+            modal.innerHTML = `
+                <div style="background:var(--secondary);border-radius:16px 16px 0 0;width:100%;max-width:600px;max-height:90vh;overflow-y:auto">
+                    <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--secondary);z-index:10">
+                        <h2 style="margin:0;font-size:17px;color:var(--accent)">📤 Выдача материалов</h2>
+                        <button onclick="document.getElementById('issueModal').remove()" style="background:transparent;border:none;color:var(--text-muted);font-size:24px;cursor:pointer;line-height:1">×</button>
+                    </div>
+                    <div style="padding:20px">
+
+                        <!-- Кому -->
+                        <div class="form-group" style="margin-bottom:14px">
+                            <label style="display:block;margin-bottom:6px;color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px">Кому выдано *</label>
+                            <select id="issueToUser" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(10,10,15,0.8);color:var(--text);font-size:14px">
+                                <option value="">— выберите сотрудника —</option>
+                                ${userOptions}
+                            </select>
+                        </div>
+
+                        <!-- Дата выдачи -->
+                        <div class="form-group" style="margin-bottom:14px">
+                            <label style="display:block;margin-bottom:6px;color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px">Дата выдачи *</label>
+                            <input type="datetime-local" id="issueDate"
+                                   value="${new Date().toISOString().slice(0,16)}"
+                                   style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(10,10,15,0.8);color:var(--text);font-size:14px;box-sizing:border-box">
+                        </div>
+
+                        <!-- Цель / задача АВР -->
+                        <div class="form-group" style="margin-bottom:14px">
+                            <label style="display:block;margin-bottom:6px;color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px">Задача АВР/НРД</label>
+                            <select id="issueAvrTask" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(10,10,15,0.8);color:var(--text);font-size:14px">
+                                ${avrOptions}
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:20px">
+                            <label style="display:block;margin-bottom:6px;color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px">Примечание / цель</label>
+                            <input type="text" id="issuePurpose" placeholder="Например: монтаж на ул. Ленина"
+                                   style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(10,10,15,0.8);color:var(--text);font-size:14px;box-sizing:border-box">
+                        </div>
+
+                        <!-- Позиции -->
+                        <div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:16px">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                                <span style="font-weight:600;color:var(--text)">Позиции выдачи</span>
+                                <button type="button" onclick="addIssueItem()"
+                                        style="padding:6px 12px;border-radius:6px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:13px;cursor:pointer">
+                                    ➕ Добавить
+                                </button>
+                            </div>
+                            <div id="issueItemsContainer">
+                                <!-- Первая позиция -->
+                            </div>
+                        </div>
+
+                        <button onclick="saveIssue()" class="btn btn-success" style="width:100%;padding:13px;font-size:15px">
+                            ✅ Оформить выдачу
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Сохраняем опции глобально
+            window._issueMaterialOptions = matOptions;
+            window._issueItemCount = 0;
+
+            // Добавляем первую позицию
+            addIssueItem();
+        };
+
+        window.addIssueItem = function() {
+            window._issueItemCount = (window._issueItemCount || 0) + 1;
+            const n = window._issueItemCount;
+            const container = document.getElementById('issueItemsContainer');
+            if (!container) return;
+
+            const div = document.createElement('div');
+            div.id = `issue-item-${n}`;
+            div.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px';
+            div.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                    <span style="font-weight:600;color:var(--accent);font-size:13px">Позиция ${n}</span>
+                    ${n > 1 ? `<button type="button" onclick="document.getElementById('issue-item-${n}').remove()" style="background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1">✕</button>` : ''}
+                </div>
+                <div style="margin-bottom:8px">
+                    <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Материал *</label>
+                    <input type="text" id="issue-mat-search-${n}" list="issue-mat-list-${n}"
+                           placeholder="Начните вводить название..."
+                           oninput="issueMatInput(${n}, this.value)"
+                           autocomplete="off"
+                           style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(10,10,15,0.8);color:var(--text);font-size:14px;box-sizing:border-box">
+                    <datalist id="issue-mat-list-${n}">${window._issueMaterialOptions || ''}</datalist>
+                    <input type="hidden" id="issue-mat-id-${n}">
+                    <div id="issue-mat-stock-${n}" style="font-size:11px;color:var(--text-muted);margin-top:3px"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px">
+                    <div>
+                        <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Количество *</label>
+                        <input type="number" id="issue-qty-${n}" value="1" min="0.001" step="0.001"
+                               style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(10,10,15,0.8);color:var(--text);font-size:14px;box-sizing:border-box">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Ед.</label>
+                        <input type="text" id="issue-unit-${n}" readonly
+                               style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(10,10,15,0.5);color:var(--text-muted);font-size:14px;box-sizing:border-box">
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        };
+
+        window.issueMatInput = function(n, val) {
+            // Ищем материал по введённому тексту в глобальной карте
+            const map = window._issueMatMap || {};
+            const matId = document.getElementById('issue-mat-id-' + n);
+            const unitEl = document.getElementById('issue-unit-' + n);
+            const stockEl = document.getElementById('issue-mat-stock-' + n);
+
+            const found = Object.values(map).find(m =>
+                val && (m.name + ' (' + m.category + ')').toLowerCase().startsWith(val.split(' —')[0].toLowerCase())
+            );
+
+            if (found) {
+                if (matId)   matId.value = found.id;
+                if (unitEl)  unitEl.value = found.default_unit || 'шт';
+                if (stockEl) stockEl.textContent = `На складе: ${found.stock} ${found.default_unit || 'шт'}`;
+            } else {
+                if (matId)   matId.value = '';
+                if (unitEl)  unitEl.value = '';
+                if (stockEl) stockEl.textContent = '';
+            }
+        };
+
+        window.saveIssue = async function() {
+            const issuedTo = document.getElementById('issueToUser').value;
+            const issuedAt = document.getElementById('issueDate').value;
+            const purpose  = document.getElementById('issuePurpose').value.trim() || null;
+            const avrId    = document.getElementById('issueAvrTask').value || null;
+
+            if (!issuedTo) { showToast('Выберите сотрудника'); return; }
+            if (!issuedAt) { showToast('Укажите дату выдачи'); return; }
+
+            // Собираем позиции
+            const items = [];
+            document.querySelectorAll('[id^="issue-item-"]').forEach(row => {
+                const n = row.id.replace('issue-item-', '');
+                const matId = document.getElementById('issue-mat-id-' + n)?.value;
+                const qty   = parseFloat(document.getElementById('issue-qty-' + n)?.value);
+                if (matId && qty > 0) items.push({ material_id: matId, quantity: qty });
+            });
+
+            if (items.length === 0) { showToast('Добавьте хотя бы одну позицию'); return; }
+
+            // Проверяем остатки
+            for (const item of items) {
+                const { data: w } = await supabaseClient
+                    .from('warehouse')
+                    .select('quantity_available')
+                    .eq('material_id', item.material_id)
+                    .single();
+                if (!w || w.quantity_available < item.quantity) {
+                    showToast('Недостаточно материала на складе');
+                    return;
+                }
+            }
+
+            try {
+                // 1. Создаём запись выдачи
+                const { data: issue, error: issueErr } = await supabaseClient
+                    .from('warehouse_issues')
+                    .insert({
+                        issued_at:   issuedAt,
+                        issued_to:   issuedTo,
+                        purpose:     purpose,
+                        task_avr_id: avrId,
+                        created_by:  currentUserProfile?.id
+                    })
+                    .select().single();
+
+                if (issueErr) throw issueErr;
+
+                // 2. Добавляем позиции
+                const { error: itemsErr } = await supabaseClient
+                    .from('warehouse_issue_items')
+                    .insert(items.map(i => ({ ...i, issue_id: issue.id })));
+
+                if (itemsErr) throw itemsErr;
+
+                // 3. Списываем со склада
+                for (const item of items) {
+                    const { data: w } = await supabaseClient
+                        .from('warehouse')
+                        .select('id, quantity_available')
+                        .eq('material_id', item.material_id)
+                        .single();
+                    if (w) {
+                        await supabaseClient
+                            .from('warehouse')
+                            .update({
+                                quantity_available: Math.max(0, w.quantity_available - item.quantity),
+                                last_updated: new Date().toISOString()
+                            })
+                            .eq('id', w.id);
+                    }
+                }
+
+                document.getElementById('issueModal').remove();
+                showToast(`✅ Выдано ${items.length} поз. со склада`);
+                await renderWarehouseTab();
+
+            } catch(err) {
+                console.error('saveIssue error:', err);
+                showToast('Ошибка: ' + err.message);
+            }
+        };
+
+        // История выдач
+        window.showIssueHistory = async function() {
+            showModal('Загрузка...', '<div class="loading"><div class="dancing-loader"><div class="loader-head"></div><div class="loader-body"></div><div class="loader-arm-left"></div><div class="loader-arm-right"></div><div class="loader-leg-left"></div><div class="loader-leg-right"></div></div></div>');
+
+            const { data: issues } = await supabaseClient
+                .from('warehouse_issues')
+                .select('id, issued_at, purpose, task_avr_id, issued_to, created_at')
+                .order('issued_at', { ascending: false })
+                .limit(100);
+
+            if (!issues || issues.length === 0) {
+                showModal('История выдач', '<p style="color:var(--text-muted);padding:20px">Выдач пока не было</p>');
+                return;
+            }
+
+            // Загружаем пользователей и позиции
+            const userIds = [...new Set(issues.map(i => i.issued_to).filter(Boolean))];
+            const issueIds = issues.map(i => i.id);
+
+            const [usersRes, itemsRes] = await Promise.all([
+                supabaseClient.from('users').select('id, name').in('id', userIds),
+                supabaseClient.from('warehouse_issue_items')
+                    .select('issue_id, material_id, quantity')
+                    .in('issue_id', issueIds)
+            ]);
+
+            const usersMap = {};
+            (usersRes.data || []).forEach(u => usersMap[u.id] = u.name);
+
+            const matIds = [...new Set((itemsRes.data || []).map(i => i.material_id).filter(Boolean))];
+            const { data: matsData } = await supabaseClient
+                .from('materials').select('id, name, default_unit').in('id', matIds);
+            const matsMap = {};
+            (matsData || []).forEach(m => matsMap[m.id] = m);
+
+            // Группируем позиции по issue_id
+            const itemsByIssue = {};
+            (itemsRes.data || []).forEach(item => {
+                if (!itemsByIssue[item.issue_id]) itemsByIssue[item.issue_id] = [];
+                itemsByIssue[item.issue_id].push(item);
+            });
+
+            const html = issues.map(issue => {
+                const items = itemsByIssue[issue.id] || [];
+                const date = new Date(issue.issued_at).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+                const itemsHtml = items.map(i => {
+                    const m = matsMap[i.material_id] || {};
+                    return `<div style="font-size:12px;color:var(--text-muted);padding:2px 0">
+                        • ${m.name || 'Материал'} — <strong style="color:var(--text)">${i.quantity} ${m.default_unit || 'шт'}</strong>
+                    </div>`;
+                }).join('');
+
+                return `
+                <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+                        <div>
+                            <div style="font-weight:600;color:var(--text);font-size:14px">
+                                👤 ${usersMap[issue.issued_to] || 'Сотрудник'}
+                            </div>
+                            <div style="font-size:12px;color:var(--text-muted);margin-top:2px">
+                                📅 ${date}
+                                ${issue.purpose ? ` • ${issue.purpose}` : ''}
+                            </div>
+                        </div>
+                        <span style="font-size:12px;background:rgba(0,217,255,0.15);color:var(--accent);padding:3px 8px;border-radius:4px">
+                            ${items.length} поз.
+                        </span>
+                    </div>
+                    <div style="border-top:1px solid var(--border);padding-top:8px">${itemsHtml}</div>
+                </div>`;
+            }).join('');
+
+            showModal('📋 История выдач', `<div style="max-height:60vh;overflow-y:auto">${html}</div>`);
+        };
+
+
+        window.quickIssueOne = async function(materialId, materialName, stock, unit) {
+            await showIssueModal();
+            // Предзаполняем первую позицию
+            setTimeout(() => {
+                const search1 = document.getElementById('issue-mat-search-1');
+                const id1 = document.getElementById('issue-mat-id-1');
+                const unit1 = document.getElementById('issue-unit-1');
+                const stock1 = document.getElementById('issue-mat-stock-1');
+                if (search1) search1.value = materialName;
+                if (id1) id1.value = materialId;
+                if (unit1) unit1.value = unit;
+                if (stock1) stock1.textContent = 'На складе: ' + stock + ' ' + unit;
+            }, 100);
+        };
+
         async function renderWarehouseTab() {
             const { data: materials } = await supabaseClient
                 .from('materials')
@@ -8097,9 +8466,17 @@
             let html = `
                 <h2 style="margin-bottom: 16px">📦 Склад</h2>
                 
-                <button class="btn" onclick="showAddMaterialToWarehouseModal()" style="margin-bottom:16px">
-                    ➕ Пополнить склад
-                </button>
+                <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+                    <button class="btn" onclick="showAddMaterialToWarehouseModal()">
+                        ➕ Пополнить склад
+                    </button>
+                    <button class="btn btn-warning" onclick="showIssueModal()">
+                        📤 Выдать материалы
+                    </button>
+                    <button class="btn btn-secondary" onclick="showIssueHistory()">
+                        📋 История выдач
+                    </button>
+                </div>
                 
                 <!-- Фильтры -->
                 <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
@@ -8197,9 +8574,8 @@
                 
                 categories[category].forEach(m => {
                     html += `
-                        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer" 
-                            onclick="showMaterialUsageInAVR('${m.id}', '${m.name.replace(/'/g, "\\'")}')">
-                            <td style="padding:6px;color:#fff">
+                        <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+                            <td style="padding:6px;color:#fff;cursor:pointer" onclick="showMaterialUsageInAVR('${m.id}', '${m.name.replace(/'/g, "\\'")}')">
                                 <div style="font-weight:500;font-size:13px">${m.name}</div>
                             </td>
                             <td style="padding:6px;text-align:center;color:var(--text-muted);font-size:12px">${m.default_unit}</td>
@@ -8207,6 +8583,9 @@
                                 <span style="font-size:13px;font-weight:600;color:${m.qty > 0 ? '#00FF88' : '#EF4444'}">
                                     ${m.qty}
                                 </span>
+                            </td>
+                            <td style="padding:4px 6px;text-align:right">
+                                ${m.qty > 0 ? `<button onclick="quickIssueOne('${m.id}','${m.name.replace(/'/g, "\\'")}',${m.qty},'${m.default_unit||'шт'}')" style="padding:3px 8px;border-radius:5px;border:1px solid rgba(255,150,0,0.5);background:transparent;color:#FF9600;font-size:11px;cursor:pointer" title="Выдать">📤</button>` : ''}
                             </td>
                         </tr>
                     `;
