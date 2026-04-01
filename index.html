@@ -2390,6 +2390,13 @@
                 position: sticky;
                 bottom: 0;
                 bottom: env(safe-area-inset-bottom, 0);
+                /* Prevent keyboard from covering input */
+                flex-shrink: 0;
+            }
+            /* When input is fixed (keyboard open) — add space for it */
+            .messenger-wrap.chat-open .messages-list {
+                -webkit-overflow-scrolling: touch;
+                overscroll-behavior: contain;
             }
         }
 
@@ -13464,23 +13471,79 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             // Подписываемся на unread сообщения во всех чатах
             subscribeToAllChatsUnread();
 
-            // Mobile keyboard: adjust messenger height when virtual keyboard opens
+            // Mobile keyboard: keep chat input visible above virtual keyboard
             if (window.visualViewport) {
                 window._vpResizeHandler = () => {
-                    const wrap = document.getElementById('messenger-wrap');
-                    if (!wrap) return;
                     if (window.innerWidth > 768) return;
-                    const vh = window.visualViewport.height;
-                    const offsetTop = window.visualViewport.offsetTop;
-                    if (wrap.classList.contains('chat-open')) {
-                        wrap.style.height = vh + 'px';
-                        wrap.style.top = offsetTop + 'px';
+                    const wrap = document.getElementById('messenger-wrap');
+                    if (!wrap || !wrap.classList.contains('chat-open')) return;
+
+                    const vv = window.visualViewport;
+                    const fullH = window.screen.height;
+                    const visibleH = vv.height;
+                    const kbHeight = Math.max(0, window.innerHeight - visibleH - vv.offsetTop);
+
+                    // Resize the messenger wrap to fit visible area
+                    wrap.style.height = visibleH + 'px';
+                    wrap.style.top = vv.offsetTop + 'px';
+
+                    // Push chat-input-container above keyboard
+                    const input = wrap.querySelector('.chat-input-container');
+                    if (input) {
+                        if (kbHeight > 50) {
+                            // Keyboard is open — fix input at bottom of visible area
+                            input.style.position = 'fixed';
+                            input.style.bottom = '0';
+                            input.style.left = '0';
+                            input.style.right = '0';
+                            input.style.zIndex = '300';
+                            // Shrink messages list to not be hidden behind input
+                            const msgs = wrap.querySelector('.messages-list');
+                            if (msgs) msgs.style.paddingBottom = (input.offsetHeight + 8) + 'px';
+                        } else {
+                            // Keyboard closed — restore
+                            input.style.position = '';
+                            input.style.bottom = '';
+                            input.style.left = '';
+                            input.style.right = '';
+                            input.style.zIndex = '';
+                            const msgs = wrap.querySelector('.messages-list');
+                            if (msgs) msgs.style.paddingBottom = '';
+                        }
+                    }
+
+                    // Scroll messages to bottom so latest message is visible
+                    const msgsList = wrap.querySelector('.messages-list');
+                    if (msgsList && kbHeight > 50) {
+                        setTimeout(() => msgsList.scrollTo({ top: msgsList.scrollHeight, behavior: 'smooth' }), 100);
                     }
                 };
                 window.visualViewport.addEventListener('resize', window._vpResizeHandler);
                 window.visualViewport.addEventListener('scroll', window._vpResizeHandler);
             }
         }
+
+        // iOS keyboard fix: scroll input into view on focus
+        window._onChatInputFocus = function() {
+            if (window.innerWidth > 768) return;
+            setTimeout(() => {
+                const input = document.querySelector('.chat-input-container');
+                if (input) {
+                    input.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    // Trigger viewport handler manually for iOS
+                    if (window._vpResizeHandler) window._vpResizeHandler();
+                }
+                const msgs = document.getElementById('messages-list');
+                if (msgs) msgs.scrollTo({ top: msgs.scrollHeight, behavior: 'smooth' });
+            }, 350); // wait for keyboard animation
+        };
+
+        window._onChatInputBlur = function() {
+            if (window.innerWidth > 768) return;
+            setTimeout(() => {
+                if (window._vpResizeHandler) window._vpResizeHandler();
+            }, 100);
+        };
 
         function _stopAllPolling() {
             if (window._fastPollInterval)    { clearInterval(window._fastPollInterval);    window._fastPollInterval    = null; }
@@ -13492,7 +13555,14 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             const wrap = document.getElementById('messenger-wrap');
             wrap?.classList.remove('chat-open');
             // Reset inline styles set by visualViewport
-            if (wrap) { wrap.style.height = ''; wrap.style.top = ''; }
+            if (wrap) {
+                wrap.style.height = '';
+                wrap.style.top = '';
+                const input = wrap.querySelector('.chat-input-container');
+                if (input) { input.style.position = ''; input.style.bottom = ''; input.style.left = ''; input.style.right = ''; input.style.zIndex = ''; }
+                const msgs = wrap.querySelector('.messages-list');
+                if (msgs) msgs.style.paddingBottom = '';
+            }
             // Restore body scroll on mobile
             document.body.style.overflow = '';
             document.body.style.position = '';
@@ -14215,7 +14285,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                 '    <div id="reply-bar"></div>',
                 '    <div class="chat-input-row">',
                 '      <button class="chat-input-plus-btn" onclick="togglePlusMenu()" title="Добавить">+</button>',
-                '      <input type="text" id="message-input" placeholder="Сообщение..." onkeypress="if(event.key===\'Enter\') sendMessage()" oninput="handleTyping()">',
+                '      <input type="text" id="message-input" placeholder="Сообщение..." onkeypress="if(event.key===\'Enter\') sendMessage()" oninput="handleTyping()" onfocus="_onChatInputFocus()" onblur="_onChatInputBlur()">',
                 '      <button class="send-btn" onclick="sendMessage()">&#10148;</button>',
                 '    </div>',
                 '    <div id="typing-indicator" style="position:absolute;bottom:100%;left:12px;background:rgba(0,217,255,0.15);color:#00D9FF;padding:4px 10px;border-radius:12px;font-size:12px;display:none;pointer-events:none;">пишет...</div>',
