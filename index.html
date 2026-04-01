@@ -3185,7 +3185,14 @@
                 }
                 
                 console.log('🔧 Creating Supabase client with URL:', SUPABASE_URL.substring(0, 30) + '...');
-                supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: {
+                        persistSession: true,
+                        storage: window.localStorage,
+                        autoRefreshToken: true,
+                        detectSessionInUrl: false
+                    }
+                });
                 window.supabaseClient = supabaseClient;
                 
                 console.log('✅ Supabase client initialized successfully');
@@ -4306,7 +4313,11 @@
         function startHeartbeat() {
             if (heartbeatInterval) clearInterval(heartbeatInterval);
             heartbeatInterval = setInterval(async () => {
-                if (currentUserProfile?.id) await updateUserStatus(true);
+                if (currentUserProfile?.id) {
+                    await updateUserStatus(true);
+                    // Сбрасываем зависшие онлайн-статусы других пользователей
+                    supabaseClient.rpc('reset_stale_online_status').catch(() => {});
+                }
             }, 15000);
         }
 
@@ -4341,8 +4352,8 @@
                     // Update partner online status in chat list
                     if (currentView === 'messenger' && payload.new) {
                         const uid = payload.new.id;
-                        const isOn = payload.new.is_online || 
-                            (payload.new.last_seen_at && (Date.now() - new Date(payload.new.last_seen_at)) < 3*60*1000);
+                        const isOn = payload.new.last_seen_at && 
+                            (Date.now() - new Date(payload.new.last_seen_at)) < 5*60*1000;
                         // Update in messengerState.chats cache
                         messengerState.chats?.forEach(c => {
                             if (c.partnerId === uid) {
@@ -4376,7 +4387,8 @@
                     const offlineUsers = [];
                     users.forEach(user => {
                         const lastActivity = user.last_seen_at ? new Date(user.last_seen_at) : null;
-                        if ((lastActivity && (now - lastActivity) < 3 * 60 * 1000) || user.is_online) {
+                        const isOnline = lastActivity && (now - lastActivity) < 5 * 60 * 1000;
+                        if (isOnline) {
                             onlineUsers.push(user);
                         } else {
                             offlineUsers.push(user);
@@ -4739,15 +4751,18 @@
             }
             
             try {
-                // Используем Supabase Admin API через Edge Function
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                const token = session?.access_token;
+                // Получаем токен — сначала из Supabase, затем из localStorage как fallback
+                let token = null;
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    token = session?.access_token;
+                } catch(e) {}
+                if (!token) token = localStorage.getItem('token');
                 
-                console.log('Current session:', session);
-                console.log('Token:', token ? 'Present' : 'Missing');
+                console.log('Token:', token ? 'Present (' + token.length + ' chars)' : 'Missing');
                 
                 if (!token) {
-                    showToast('Ошибка авторизации');
+                    showToast('Ошибка авторизации — перезайдите в приложение');
                     return;
                 }
                 
@@ -10984,186 +10999,234 @@
         // Глобальное состояние архива
         window.archiveState = {
             selectedYear: new Date().getFullYear(),
+            searchQuery: '',
+            activeFilter: 'all', // all | tasks | installations | avr
             allTasks: [],
             allInstallations: [],
-            allAVRTasks: []
+            allAVRTasks: [],
+            collapsed: { tasks: false, installations: false, avr: false }
         };
 
         async function renderArchive(content) {
-            // Show loading first
             content.innerHTML = '<div class="loading"><div class="dancing-loader"><div class="loader-head"></div><div class="loader-body"></div><div class="loader-arm-left"></div><div class="loader-arm-right"></div><div class="loader-leg-left"></div><div class="loader-leg-right"></div></div></div>';
-            
-            // Only accessible for managers and deputy heads
+
             if (currentUserProfile?.role !== 'manager' && currentUserProfile?.role !== 'deputy_head') {
-                content.innerHTML = `
-                    <h2 style="margin-bottom: 16px">📁 Архив</h2>
-                    <div class="card" style="background: linear-gradient(135deg, rgba(255,107,0,0.1), rgba(255,0,204,0.1)); border: 1px solid var(--danger);">
-                        <p style="line-height: 1.8; margin: 0; color: var(--text);">
-                            Доступ к архиву имею только Я.
-                        </p>
-                    </div>
-                `;
+                content.innerHTML = `<h2 style="margin-bottom:16px">📁 Архив</h2><div class="card"><p>Доступ только для руководителя.</p></div>`;
                 return;
             }
 
             try {
-                // Загружаем все завершённые работы один раз
-                if (window.archiveState.allTasks.length === 0) {
-                    const [archivedTasksResult, archivedInstallationsResult, archivedAVRResult] = await Promise.all([
-                        supabaseClient.from('tasks').select('*').in('status', ['done', 'postponed']).order('updated_at', { ascending: false }),
-                        supabaseClient.from('installations').select('*').in('status', ['done', 'postponed', 'received']).order('updated_at', { ascending: false }),
-                        supabaseClient.from('tasks_avr').select('*').in('status', ['completed', 'cancelled']).order('updated_at', { ascending: false })
+                // Загружаем данные один раз, при смене года — сбрасываем
+                if (window.archiveState.allTasks.length === 0 &&
+                    window.archiveState.allInstallations.length === 0 &&
+                    window.archiveState.allAVRTasks.length === 0) {
+                    const [t, i, a] = await Promise.all([
+                        supabaseClient.from('tasks').select('*').in('status', ['done','postponed']).order('updated_at', { ascending: false }),
+                        supabaseClient.from('installations').select('*').in('status', ['done','postponed','received']).order('updated_at', { ascending: false }),
+                        supabaseClient.from('tasks_avr').select('*').in('status', ['completed','cancelled']).order('updated_at', { ascending: false })
                     ]);
-                    
-                    window.archiveState.allTasks = Array.isArray(archivedTasksResult.data) ? archivedTasksResult.data : [];
-                    window.archiveState.allInstallations = Array.isArray(archivedInstallationsResult.data) ? archivedInstallationsResult.data : [];
-                    window.archiveState.allAVRTasks = Array.isArray(archivedAVRResult.data) ? archivedAVRResult.data : [];
-                }
-                
-                const allTasks = window.archiveState.allTasks;
-                const allInstallations = window.archiveState.allInstallations;
-                const allAVRTasks = window.archiveState.allAVRTasks;
-                
-                // Получаем уникальные годы
-                const getYear = (dateStr) => dateStr ? new Date(dateStr).getFullYear() : null;
-                const yearsSet = new Set();
-                
-                allTasks.forEach(t => { const y = getYear(t.updated_at) || getYear(t.created_at); if (y) yearsSet.add(y); });
-                allInstallations.forEach(i => { const y = getYear(i.updated_at) || getYear(i.created_at); if (y) yearsSet.add(y); });
-                
-                const years = Array.from(yearsSet).sort((a, b) => b - a);
-                if (years.length === 0) years.push(new Date().getFullYear());
-                
-                // Фильтруем по выбранному году
-                const selectedYear = window.archiveState.selectedYear;
-                const archivedTasks = allTasks.filter(t => {
-                    const y = getYear(t.updated_at) || getYear(t.created_at);
-                    return y === selectedYear;
-                });
-                const archivedInstallations = allInstallations.filter(i => {
-                    const y = getYear(i.updated_at) || getYear(i.created_at);
-                    return y === selectedYear;
-                });
-
-                // Селект для выбора года
-                const yearOptions = years.map(y => `<option value="${y}" ${y === selectedYear ? 'selected' : ''}>${y}</option>`).join('');
-                
-                let html = `
-                    <h2 style="margin-bottom: 16px">📁 Архив</h2>
-                    <div class="card" style="margin-bottom: 16px; background: linear-gradient(135deg, rgba(0,255,136,0.1), rgba(0,217,255,0.1)); border: 1px solid var(--success);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                            <p style="line-height: 1.8; margin: 0; color: var(--text);">
-                                Завершенные задачи и монтажи за год:
-                            </p>
-                            <select id="archiveYearSelect" onchange="changeArchiveYear(this.value)" 
-                                    style="padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); 
-                                           background: rgba(0,0,0,0.3); color: var(--text); font-size: 14px; cursor: pointer;">
-                                ${yearOptions}
-                            </select>
-                        </div>
-                        <div style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">
-                            Всего в архиве: ${allTasks.length} задач, ${allInstallations.length} монтажей, ${allAVRTasks.length} заявок АВР
-                        </div>
-                    </div>
-                `;
-
-                // Archived Tasks Section
-                html += `<h3 class="section-title" style="margin-top: 16px;">✓ Завершенные задачи (${archivedTasks.length})</h3>`;
-
-                if (archivedTasks.length === 0) {
-                    html += '<div class="empty-state"><div class="empty-state-icon">✓</div><p>Нет завершенных задач за этот год</p></div>';
-                } else {
-                    try {
-                        const enrichedTasks = await enrichTasks(archivedTasks);
-                        enrichedTasks.forEach(task => {
-                            html += renderTaskCard(task);
-                        });
-                    } catch (e) {
-                        console.error('Error enriching tasks:', e);
-                        archivedTasks.forEach(task => {
-                            html += renderTaskCard(task);
-                        });
-                    }
+                    window.archiveState.allTasks        = t.data || [];
+                    window.archiveState.allInstallations = i.data || [];
+                    window.archiveState.allAVRTasks     = a.data || [];
                 }
 
-                // Archived Installations Section
-                html += `<h3 class="section-title" style="margin-top: 24px;">⚙ Завершенные монтажи (${archivedInstallations.length})</h3>`;
+                _renderArchiveUI(content);
 
-                if (archivedInstallations.length === 0) {
-                    html += '<div class="empty-state"><div class="empty-state-icon">⚙</div><p>Нет завершенных монтажей за этот год</p></div>';
-                } else {
-                    try {
-                        const enrichedInstallations = await enrichInstallations(archivedInstallations);
-                        enrichedInstallations.forEach(inst => {
-                            html += renderInstallationCard(inst);
-                        });
-                    } catch (e) {
-                        console.error('Error enriching installations:', e);
-                        archivedInstallations.forEach(inst => {
-                            html += renderInstallationCard(inst);
-                        });
-                    }
-                }
-
-                // Archived AVR Tasks Section
-                const filteredAVRTasks = allAVRTasks.filter(t => {
-                    const y = getYear(t.updated_at) || getYear(t.created_at);
-                    return y === selectedYear;
-                });
-                
-                html += `<h3 class="section-title" style="margin-top: 24px;">📋 Заявки АВР/НРД (${filteredAVRTasks.length})</h3>`;
-
-                if (filteredAVRTasks.length === 0) {
-                    html += '<div class="empty-state"><div class="empty-state-icon">📋</div><p>Нет завершенных заявок за этот год</p></div>';
-                } else {
-                    const typeLabels = { 'AVR': 'АВР', 'NRD': 'НРД', 'TECH_TASK': 'Тех. задача' };
-                    const statusLabels = { 'completed': 'Выполнено', 'cancelled': 'Отменено' };
-                    
-                    filteredAVRTasks.forEach(task => {
-                        html += `
-                            <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="showAVRDetail('${task.id}')">
-                                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
-                                    <div>
-                                        <div style="font-weight:600;color:#fff;margin-bottom:4px">${task.short_id ? `<span style="background:var(--accent);color:white;padding:2px 6px;border-radius:4px;font-size:11px;margin-right:6px">#${String(task.short_id).padStart(4, '0')}</span>` : ''}${task.title}</div>
-                                        <div style="font-size:12px;color:var(--text-muted)">
-                                            ${typeLabels[task.type] || task.type} • ${formatDate(task.date_from)} - ${formatDate(task.date_to)}
-                                        </div>
-                                        ${task.address_text ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">📍 ${task.address_text}</div>` : ''}
-                                    </div>
-                                    <span class="status" style="background:${task.status === 'completed' ? '#10B981' : '#EF4444'};color:#fff;padding:4px 8px;border-radius:4px;font-size:12px">
-                                        ${statusLabels[task.status] || task.status}
-                                    </span>
-                                </div>
-                                ${task.description ? `<div style="font-size:13px;color:var(--text-muted);margin-top:8px;line-height:1.4">${task.description.substring(0, 100)}${task.description.length > 100 ? '...' : ''}</div>` : ''}
-                            </div>
-                        `;
-                    });
-                }
-
-                content.innerHTML = html;
-            } catch (error) {
-                console.error('Error loading archive:', error);
-                content.innerHTML = `
-                    <h2 style="margin-bottom: 16px">📁 Архив</h2>
-                    <div class="card" style="background: rgba(255,51,102,0.1); border: 1px solid var(--danger);">
-                        <p style="color: var(--danger);">
-                            Ошибка загрузки архива: ${error.message}
-                        </p>
-                        <button class="btn btn-outline" onclick="renderArchive(document.getElementById('content'))" style="margin-top: 12px;">
-                            Повторить
-                        </button>
-                    </div>
-                `;
+            } catch (err) {
+                console.error('Archive error:', err);
+                content.innerHTML = `<h2 style="margin-bottom:16px">📁 Архив</h2>
+                    <div class="card" style="border:1px solid var(--danger)">
+                        <p style="color:var(--danger)">Ошибка: ${err.message}</p>
+                        <button class="btn btn-outline" onclick="window.archiveState.allTasks=[];window.archiveState.allInstallations=[];window.archiveState.allAVRTasks=[];renderArchive(document.getElementById('content'))" style="margin-top:12px">Повторить</button>
+                    </div>`;
             }
         }
-        
-        // Смена года в архиве
+
+        function _renderArchiveUI(content) {
+            const state = window.archiveState;
+            const getYear = d => d ? new Date(d).getFullYear() : null;
+
+            // Years list
+            const yearsSet = new Set();
+            [...state.allTasks, ...state.allInstallations, ...state.allAVRTasks].forEach(x => {
+                const y = getYear(x.updated_at) || getYear(x.created_at);
+                if (y) yearsSet.add(y);
+            });
+            const years = Array.from(yearsSet).sort((a,b) => b-a);
+            if (!years.length) years.push(new Date().getFullYear());
+
+            const y = state.selectedYear;
+            const q = (state.searchQuery || '').toLowerCase().trim();
+            const f = state.activeFilter || 'all';
+
+            const inYear = (x) => (getYear(x.updated_at) || getYear(x.created_at)) === y;
+            const matchSearch = (x, ...fields) => !q || fields.some(v => v && String(v).toLowerCase().includes(q));
+
+            // Filter data
+            const tasks = state.allTasks.filter(t =>
+                inYear(t) && matchSearch(t, t.title, t.description, t.address_text));
+            const insts = state.allInstallations.filter(i =>
+                inYear(i) && matchSearch(i, i.title, i.description, i.address_text));
+            const avrs  = state.allAVRTasks.filter(a =>
+                inYear(a) && matchSearch(a, a.title, a.description, a.address_text));
+
+            const total = tasks.length + insts.length + avrs.length;
+
+            // Year select options
+            const yearOpts = years.map(yr =>
+                `<option value="${yr}" ${yr===y?'selected':''}>${yr}</option>`).join('');
+
+            // Filter pills
+            const pills = [
+                { id:'all',           label:`Все (${tasks.length+insts.length+avrs.length})` },
+                { id:'tasks',         label:`Задачи (${tasks.length})` },
+                { id:'installations', label:`Монтажи (${insts.length})` },
+                { id:'avr',           label:`АВР/НРД (${avrs.length})` }
+            ].map(p => `<button class="pill${f===p.id?' active':''}" onclick="window.archiveFilter('${p.id}')">${p.label}</button>`).join('');
+
+            let html = `
+                <h2 style="margin-bottom:12px">📁 Архив</h2>
+
+                <!-- Controls card -->
+                <div class="card" style="margin-bottom:12px;padding:12px 14px">
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+                        <!-- Search -->
+                        <div style="flex:1;min-width:160px;position:relative">
+                            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none">🔍</span>
+                            <input id="archiveSearch" type="text" placeholder="Поиск по названию, адресу..."
+                                value="${q.replace(/"/g,'&quot;')}"
+                                oninput="window.archiveSearch(this.value)"
+                                style="width:100%;padding:8px 10px 8px 32px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--text);font-size:13px;outline:none">
+                        </div>
+                        <!-- Year -->
+                        <select onchange="window.changeArchiveYear(this.value)"
+                            style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(0,0,0,0.3);color:var(--text);font-size:13px;cursor:pointer">
+                            ${yearOpts}
+                        </select>
+                        <!-- Refresh -->
+                        <button onclick="window.archiveReload()" class="btn btn-outline btn-sm" title="Обновить">↺</button>
+                    </div>
+                    <!-- Filter pills -->
+                    <div style="display:flex;flex-wrap:wrap;gap:6px">${pills}</div>
+                    <div style="margin-top:8px;font-size:12px;color:var(--text-muted)">
+                        Найдено: <b style="color:var(--text)">${total}</b> записей
+                        ${q ? `<span style="color:var(--accent)"> по запросу «${q}»</span>` : ''}
+                    </div>
+                </div>`;
+
+            // ── Section builder ─────────────────────────────────────────
+            const buildSection = (key, icon, label, items, renderFn) => {
+                if (f !== 'all' && f !== key) return '';
+                const collapsed = !!state.collapsed[key];
+                const toggle = `window.archiveToggle('${key}')`;
+                let s = `
+                    <div style="margin-bottom:4px">
+                        <div onclick="${toggle}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:10px;cursor:pointer;border:1px solid rgba(255,255,255,0.07);user-select:none;transition:background 0.2s"
+                             onmouseover="this.style.background='rgba(0,217,255,0.07)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+                            <span style="font-weight:600;font-size:14px;color:var(--accent)">${icon} ${label} <span style="color:var(--text-muted);font-weight:400;font-size:13px">(${items.length})</span></span>
+                            <span style="color:var(--text-muted);font-size:18px;transition:transform 0.2s;display:inline-block;transform:rotate(${collapsed?'-90':'0'}deg)">▾</span>
+                        </div>
+                        <div id="arch-section-${key}" style="display:${collapsed?'none':'block'};margin-top:6px">`;
+                if (items.length === 0) {
+                    s += `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">Нет записей</div>`;
+                } else {
+                    s += renderFn(items);
+                }
+                s += `</div></div>`;
+                return s;
+            };
+
+            // Tasks section (sync render, enrich async after)
+            html += buildSection('tasks', '✓', 'Завершённые задачи', tasks, (items) => {
+                return items.map(t => renderTaskCard(t)).join('');
+            });
+
+            // Installations section
+            html += buildSection('installations', '⚙', 'Завершённые монтажи', insts, (items) => {
+                return items.map(i => renderInstallationCard(i)).join('');
+            });
+
+            // AVR section
+            const typeLabels   = { AVR:'АВР', NRD:'НРД', TECH_TASK:'Тех. задача' };
+            const statusColors = { completed:'#10B981', cancelled:'#EF4444' };
+            const statusLabels = { completed:'Выполнено', cancelled:'Отменено' };
+            html += buildSection('avr', '📋', 'Заявки АВР / НРД', avrs, (items) => {
+                return items.map(task => `
+                    <div class="card" style="margin-bottom:8px;cursor:pointer;padding:12px" onclick="showAVRDetail('${task.id}')">
+                        <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
+                            <div style="min-width:0;flex:1">
+                                <div style="font-weight:600;color:#fff;margin-bottom:3px;font-size:13px">
+                                    ${task.short_id ? `<span style="background:var(--accent);color:#000;padding:1px 5px;border-radius:3px;font-size:10px;margin-right:5px">#${String(task.short_id).padStart(4,'0')}</span>` : ''}
+                                    ${task.title || '—'}
+                                </div>
+                                <div style="font-size:11px;color:var(--text-muted)">
+                                    ${typeLabels[task.type]||task.type||''} · ${formatDate(task.date_from)} – ${formatDate(task.date_to)}
+                                </div>
+                                ${task.address_text ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">📍 ${task.address_text}</div>` : ''}
+                            </div>
+                            <span style="background:${statusColors[task.status]||'#888'};color:#fff;padding:3px 8px;border-radius:4px;font-size:11px;white-space:nowrap;flex-shrink:0">
+                                ${statusLabels[task.status]||task.status}
+                            </span>
+                        </div>
+                    </div>`).join('');
+            });
+
+            content.innerHTML = html;
+
+            // Async enrich tasks & installations in background
+            if (f === 'all' || f === 'tasks') {
+                enrichTasks(tasks).then(enriched => {
+                    const sec = document.getElementById('arch-section-tasks');
+                    if (sec && !state.collapsed.tasks) sec.innerHTML = enriched.map(t => renderTaskCard(t)).join('') || '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">Нет записей</div>';
+                }).catch(() => {});
+            }
+            if (f === 'all' || f === 'installations') {
+                enrichInstallations(insts).then(enriched => {
+                    const sec = document.getElementById('arch-section-installations');
+                    if (sec && !state.collapsed.installations) sec.innerHTML = enriched.map(i => renderInstallationCard(i)).join('') || '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">Нет записей</div>';
+                }).catch(() => {});
+            }
+        }
+
+        // ── Archive controls ─────────────────────────────────────────────
         window.changeArchiveYear = function(year) {
             window.archiveState.selectedYear = parseInt(year);
+            window.archiveState.allTasks = [];
+            window.archiveState.allInstallations = [];
+            window.archiveState.allAVRTasks = [];
             renderArchive(document.getElementById('content'));
         };
 
-        // Show PR detail in modal - for managers (optimized)
+        window.archiveFilter = function(f) {
+            window.archiveState.activeFilter = f;
+            _renderArchiveUI(document.getElementById('content'));
+        };
+
+        let _archiveSearchTimer = null;
+        window.archiveSearch = function(q) {
+            window.archiveState.searchQuery = q;
+            clearTimeout(_archiveSearchTimer);
+            _archiveSearchTimer = setTimeout(() => {
+                _renderArchiveUI(document.getElementById('content'));
+            }, 300);
+        };
+
+        window.archiveToggle = function(key) {
+            window.archiveState.collapsed[key] = !window.archiveState.collapsed[key];
+            const sec = document.getElementById('arch-section-' + key);
+            const btn = sec?.previousElementSibling?.querySelector('span:last-child');
+            if (sec) sec.style.display = window.archiveState.collapsed[key] ? 'none' : 'block';
+            if (btn) btn.style.transform = `rotate(${window.archiveState.collapsed[key] ? '-90' : '0'}deg)`;
+        };
+
+        window.archiveReload = function() {
+            window.archiveState.allTasks = [];
+            window.archiveState.allInstallations = [];
+            window.archiveState.allAVRTasks = [];
+            renderArchive(document.getElementById('content'));
+        };
+
+                // Show PR detail in modal - for managers (optimized)
         window.showPRDetailModal = async function(prId) {
             // Сбросить бейдж непрочитанных для данной заявки
             markAsRead('pr', prId);
@@ -13640,8 +13703,8 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                     '  <div class="' + itemCls + '" onclick="selectChat(\'' + chat.chat_id + '\')">',
                     (() => {
                         const now = new Date();
-                        const isOnline = !isGroup && (chat.partnerOnline || 
-                            (chat.partnerSeen && (now - new Date(chat.partnerSeen)) < 3 * 60 * 1000));
+                        const isOnline = !isGroup && 
+                            (chat.partnerSeen && (now - new Date(chat.partnerSeen)) < 5 * 60 * 1000);
                         const onlineDot = (!isGroup && isOnline) ? '<span class="cl-online-dot"></span>' : '';
                         if (!isGroup && chat.partnerAvatar) {
                             const safeAvatar = chat.partnerAvatar.replace(/"/g, '&quot;');
@@ -14115,7 +14178,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                 // Check online status of partner
                 const partnerId = selChat?.partnerId;
                 if (partnerId) {
-                    supabaseClient.from('users').select('updated_at').eq('id', partnerId).single()
+                    supabaseClient.from('users').select('last_seen_at, updated_at').eq('id', partnerId).single()
                         .then(({ data: u, error }) => {
                             if (error || !u) {
                                 console.log('User last_seen not available');
@@ -14123,9 +14186,9 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                             }
                             const sub2 = document.getElementById('cv-subtitle');
                             if (!sub2) return;
-                            const diff = Date.now() - new Date(u.updated_at).getTime();
-                            sub2.textContent = diff < 3 * 60 * 1000 ? 'в сети' : 'Личный чат';
-                            if (diff < 3 * 60 * 1000) sub2.style.color = '#34C759';
+                            const diff = Date.now() - new Date(u.last_seen_at || u.updated_at).getTime();
+                            sub2.textContent = diff < 5 * 60 * 1000 ? 'в сети' : 'Личный чат';
+                            if (diff < 5 * 60 * 1000) sub2.style.color = '#34C759';
                         });
                 }
             }
