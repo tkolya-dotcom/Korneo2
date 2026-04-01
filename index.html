@@ -1059,7 +1059,7 @@
         /* ---- Outer wrap ---- */
         .messenger-wrap {
             display: flex;
-            height: calc(100vh - 170px);
+            height: calc(100dvh - 170px);
             min-height: 500px;
             gap: 0;
             background: #0B0B0C;
@@ -2191,7 +2191,7 @@
         @media (max-width: 768px) {
             .messenger-wrap {
                 flex-direction: column;
-                height: calc(100vh - 130px);
+                height: calc(100dvh - 130px);
                 border-radius: 12px;
             }
             .msg-sidebar {
@@ -2214,8 +2214,26 @@
             }
             .msg-main {
                 height: 100%;
+                overflow: hidden;
             }
             .cv-back { display: flex !important; }
+
+            /* При открытом чате на мобиле — полноэкранный режим */
+            .messenger-wrap.chat-open {
+                position: fixed;
+                inset: 0;
+                height: 100dvh;
+                height: 100vh; /* fallback */
+                border-radius: 0;
+                z-index: 200;
+            }
+
+            /* Поле ввода в полноэкранном режиме */
+            .messenger-wrap.chat-open .chat-input-container {
+                position: sticky;
+                bottom: 0;
+                bottom: env(safe-area-inset-bottom, 0);
+            }
         }
 
         /* ========================================
@@ -4896,6 +4914,15 @@
             // Сбрасываем класс мессенджера при уходе с него
             const container = document.getElementById('content')?.closest('.container');
             if (container) container.classList.remove('messenger-page');
+            // Remove visualViewport listener if exists
+            if (window._vpResizeHandler && window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', window._vpResizeHandler);
+                window.visualViewport.removeEventListener('scroll', window._vpResizeHandler);
+                window._vpResizeHandler = null;
+            }
+            // Restore body scroll
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
             renderNav();
             renderContent();
         };
@@ -13103,6 +13130,23 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             
             // Подписываемся на unread сообщения во всех чатах
             subscribeToAllChatsUnread();
+
+            // Mobile keyboard: adjust messenger height when virtual keyboard opens
+            if (window.visualViewport) {
+                window._vpResizeHandler = () => {
+                    const wrap = document.getElementById('messenger-wrap');
+                    if (!wrap) return;
+                    if (window.innerWidth > 768) return;
+                    const vh = window.visualViewport.height;
+                    const offsetTop = window.visualViewport.offsetTop;
+                    if (wrap.classList.contains('chat-open')) {
+                        wrap.style.height = vh + 'px';
+                        wrap.style.top = offsetTop + 'px';
+                    }
+                };
+                window.visualViewport.addEventListener('resize', window._vpResizeHandler);
+                window.visualViewport.addEventListener('scroll', window._vpResizeHandler);
+            }
         }
 
         function _stopAllPolling() {
@@ -13112,7 +13156,14 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
         }
 
         window.goBackToChats = function() {
-            document.getElementById('messenger-wrap')?.classList.remove('chat-open');
+            const wrap = document.getElementById('messenger-wrap');
+            wrap?.classList.remove('chat-open');
+            // Reset inline styles set by visualViewport
+            if (wrap) { wrap.style.height = ''; wrap.style.top = ''; }
+            // Restore body scroll on mobile
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.documentElement.style.overflow = '';
             _stopAllPolling();
             // Останавливаем polling непрочитанных
             if (unreadPollingInterval) {
@@ -13699,6 +13750,11 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             renderChatList();
             // Мобильный режим: показываем msg-main
             document.getElementById('messenger-wrap')?.classList.add('chat-open');
+            // Lock body scroll on mobile when chat is open
+            if (window.innerWidth <= 768) {
+                document.body.style.overflow = 'hidden';
+                document.documentElement.style.overflow = 'hidden';
+            }
 
             // Сбрасываем сообщения, polling, reply при смене чата
             _stopAllPolling();
