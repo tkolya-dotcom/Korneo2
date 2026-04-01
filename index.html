@@ -5799,6 +5799,7 @@
         
         async function getMyProjects() {
             const userId = currentUserProfile?.id;
+            if (!userId) return [];
 
             // Get projects where user has tasks or installations OR is the creator
             const { data: tasks } = await supabaseClient
@@ -5884,7 +5885,7 @@
                 .from('projects')
                 .select('*')
                 .eq('id', projectId)
-                .single();
+                .maybeSingle();
 
             if (!project) return;
 
@@ -6010,6 +6011,7 @@
         
         async function getMyTasks() {
             const userId = currentUserProfile?.id;
+            if (!userId) return [];
             const { data, error } = await supabaseClient
                 .from('tasks')
                 .select('*')
@@ -6365,6 +6367,7 @@
 
         async function getMyInstallations() {
             const userId = currentUserProfile?.id;
+            if (!userId) return [];
             const { data, error } = await supabaseClient
                 .from('installations')
                 .select('*')
@@ -7989,7 +7992,7 @@
                 .from('materials_requests')
                 .insert({ task_id: taskId, created_by: currentUserProfile.id })
                 .select()
-                .single();
+                .maybeSingle();
             
             if (reqError) {
                 showToast('Ошибка: ' + reqError.message);
@@ -8374,7 +8377,7 @@
                                 .from('warehouse')
                                 .select('*')
                                 .eq('material_id', materialId)
-                                .single();
+                                .maybeSingle();
                             
                             const currentQty = existing?.quantity_available || 0;
                             const newQty = currentQty - quantityUsed;
@@ -8437,7 +8440,7 @@
                                 .from('warehouse')
                                 .select('quantity_available')
                                 .eq('material_id', materialId)
-                                .single();
+                                .maybeSingle();
                             
                             const currentQty = warehouseItem?.quantity_available || 0;
                             
@@ -8804,7 +8807,7 @@
                     .from('warehouse')
                     .select('quantity_available')
                     .eq('material_id', item.material_id)
-                    .single();
+                    .maybeSingle();
                 if (!w || w.quantity_available < item.quantity) {
                     showToast('Недостаточно материала на складе');
                     return;
@@ -8839,7 +8842,7 @@
                         .from('warehouse')
                         .select('id, quantity_available')
                         .eq('material_id', item.material_id)
-                        .single();
+                        .maybeSingle();
                     if (w) {
                         await supabaseClient
                             .from('warehouse')
@@ -9187,7 +9190,7 @@
                                 .from('tasks_avr')
                                 .select('id, title, short_id, type')
                                 .eq('id', request.task_id)
-                                .single();
+                                .maybeSingle();
                             
                             if (task) {
                                 avrDetails.push({
@@ -9573,7 +9576,7 @@
                     .from('warehouse')
                     .select('*')
                     .eq('material_id', materialId)
-                    .single();
+                    .maybeSingle();
                 
                 if (existing) {
                     // Обновляем количество
@@ -9758,7 +9761,7 @@
                     creator:created_by(name)
                 `)
                 .eq('id', taskId)
-                .single();
+                .maybeSingle();
             
             if (!task || error) {
                 console.error('AVR detail error:', error);
@@ -10625,7 +10628,7 @@
                                 .from('warehouse')
                                 .select('*')
                                 .eq('material_id', materialId)
-                                .single();
+                                .maybeSingle();
                             
                             const currentQty = existing?.quantity_available || 0;
                             const newQty = currentQty - quantityUsed;
@@ -10745,7 +10748,7 @@
                 .from('tasks')
                 .select('*')
                 .eq('id', taskId)
-                .single();
+                .maybeSingle();
             
             if (!task) return;
 
@@ -11594,7 +11597,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                             .from('warehouse')
                             .select('id, quantity_available')
                             .eq('material_id', item.material_id)
-                            .single();
+                            .maybeSingle();
                         
                         if (existingWarehouse) {
                             // Обновляем количество
@@ -11996,7 +11999,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                 .from('projects')
                 .select('*')
                 .eq('id', projectId)
-                .single();
+                .maybeSingle();
             
             if (!project) return;
             
@@ -13027,7 +13030,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                         .from('warehouse')
                         .select('quantity_available')
                         .eq('material_id', item.material_id)
-                        .single();
+                        .maybeSingle();
                     
                     const available = warehouse?.quantity_available || 0;
                     if (available < item.quantity) {
@@ -17075,7 +17078,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             if (!statusEl) return;
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
-                const res  = await fetch(window.SUPABASE_CONFIG.url + '/functions/v1/save-sats-creds', {
+                const res  = await fetch(SUPABASE_URL + '/functions/v1/save-sats-creds', {
                     headers: { 'Authorization': 'Bearer ' + session.access_token }
                 });
                 const json = await res.json();
@@ -17116,7 +17119,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             btn.disabled = true; btn.textContent = 'Сохраняю…';
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
-                const res = await fetch(window.SUPABASE_CONFIG.url + '/functions/v1/save-sats-creds', {
+                const res = await fetch(SUPABASE_URL + '/functions/v1/save-sats-creds', {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
@@ -17138,7 +17141,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             if (!confirm('Удалить данные доступа к bi.sats.spb.ru?')) return;
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
-                await fetch(window.SUPABASE_CONFIG.url + '/functions/v1/save-sats-creds', {
+                await fetch(SUPABASE_URL + '/functions/v1/save-sats-creds', {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + session.access_token }
                 });
@@ -17395,6 +17398,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             if (!cardBlock) return;
 
             listBlock.style.display = 'none';
+            cardBlock.dataset.siteId = siteId; // сохраняем для обновления после ручного ввода мощности
             cardBlock.innerHTML = '<div style="color:rgba(255,255,255,0.3);font-size:13px;padding:20px 0">⏳ Загружаем...</div>';
 
             // Загружаем данные площадки и оборудование параллельно
@@ -17601,7 +17605,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             btn.disabled = true; btn.textContent = 'Сохраняю…';
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
-                const res = await fetch(window.SUPABASE_CONFIG.url + '/functions/v1/lookup-power', {
+                const res = await fetch(SUPABASE_URL + '/functions/v1/lookup-power', {
                     method: 'PATCH',
                     headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ model, power_watts: watts })
@@ -17625,7 +17629,7 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
             if (btn) { btn.disabled = true; btn.textContent = '⏳ Синхронизация...'; }
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
-                const res = await fetch(window.SUPABASE_CONFIG.url + '/functions/v1/sync-sites', {
+                const res = await fetch(SUPABASE_URL + '/functions/v1/sync-sites', {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
                     body: JSON.stringify({})
