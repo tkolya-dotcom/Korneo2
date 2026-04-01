@@ -3121,6 +3121,81 @@
 
         .profile-save-btn:hover { opacity: 0.85; }
         .profile-save-btn:disabled { opacity: 0.5; cursor: default; }
+
+        /* ── Вкладки профиля ── */
+        .profile-tabs {
+          display: flex;
+          gap: 4px;
+          margin-bottom: 20px;
+          border-bottom: 1px solid rgba(0,212,255,0.2);
+          padding-bottom: 0;
+        }
+        .profile-tab {
+          background: none;
+          border: none;
+          color: rgba(0,212,255,0.5);
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: .05em;
+          padding: 8px 14px;
+          cursor: pointer;
+          border-bottom: 2px solid transparent;
+          margin-bottom: -1px;
+          transition: color .2s, border-color .2s;
+        }
+        .profile-tab:hover  { color: #00D4FF; }
+        .profile-tab.active { color: #00D4FF; border-bottom-color: #00D4FF; }
+        .profile-tab-panel  { display: none; }
+        .profile-tab-panel.active { display: block; }
+
+        /* Блок внешних систем */
+        .ext-creds-block {
+          background: rgba(0,212,255,0.04);
+          border: 1px solid rgba(0,212,255,0.15);
+          border-radius: 8px;
+          padding: 16px;
+          margin-bottom: 16px;
+        }
+        .ext-creds-block h4 {
+          color: #00D4FF;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: .08em;
+          margin: 0 0 12px;
+        }
+        .ext-creds-status {
+          font-size: 12px;
+          color: rgba(255,255,255,0.45);
+          margin-bottom: 12px;
+        }
+        .ext-creds-status span { color: #00D4FF; }
+        .ext-creds-toggle {
+          background: none;
+          border: 1px solid rgba(0,212,255,0.3);
+          color: rgba(0,212,255,0.7);
+          font-size: 11px;
+          padding: 4px 10px;
+          border-radius: 4px;
+          cursor: pointer;
+          margin-bottom: 14px;
+          font-family: inherit;
+        }
+        .ext-creds-toggle:hover { border-color: #00D4FF; color: #00D4FF; }
+        .ext-creds-form { display: none; }
+        .ext-creds-form.open { display: block; }
+        .ext-creds-delete-btn {
+          background: none;
+          border: 1px solid rgba(255,60,60,0.35);
+          color: rgba(255,80,80,0.7);
+          font-size: 11px;
+          padding: 4px 10px;
+          border-radius: 4px;
+          cursor: pointer;
+          margin-left: 8px;
+          font-family: inherit;
+        }
+        .ext-creds-delete-btn:hover { border-color: #ff4444; color: #ff4444; }
 </style>
 </head>
 <body>
@@ -16853,8 +16928,8 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                 manager: 'Руководитель', deputy_head: 'Зам. начальника',
                 worker: 'Исполнитель', engineer: 'Инженер', support: 'Техподдержка'
             };
+            const isManager = ['manager','deputy_head','admin'].includes(u.role);
 
-            // Загружаем актуальные данные пользователя
             const { data: userData } = await supabaseClient
                 .from('users')
                 .select('id, name, email, role, phone, avatar_url, created_at')
@@ -16869,11 +16944,16 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                 ? `<img src="${user.avatar_url}" class="profile-avatar" alt="avatar" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<div class=&quot;profile-avatar-letter&quot;>${firstLetter}</div>')">`
                 : `<div class="profile-avatar-letter">${firstLetter}</div>`;
 
+            // Вкладка "Внешние системы" — только для руководителей
+            const extTabHtml = isManager
+                ? `<button class="profile-tab" onclick="switchProfileTab('ext')" data-tab="ext">🔑 Внешние системы</button>`
+                : '';
+
             container.innerHTML = `
                 <div class="profile-page">
                     <h2 style="margin-bottom:16px">👤 Мой профиль</h2>
 
-                    <!-- Шапка с аватаром -->
+                    <!-- Шапка -->
                     <div class="profile-header">
                         <div class="profile-avatar-wrap">
                             <div id="profileAvatarDisplay">${avatarHtml}</div>
@@ -16885,56 +16965,169 @@ showModal('Заявка #' + prId.slice(0, 8), `<div style="margin-bottom:16px">
                         <div class="profile-email">${user.email || ''}</div>
                     </div>
 
-                    <!-- Телефон -->
-                    <div class="profile-field">
-                        <label>📱 Номер телефона</label>
-                        <div class="profile-field-row">
-                            <input type="tel" id="profilePhone"
-                                   value="${user.phone || ''}"
-                                   placeholder="+7 (___) ___-__-__">
-                        </div>
+                    <!-- Вкладки -->
+                    <div class="profile-tabs">
+                        <button class="profile-tab active" onclick="switchProfileTab('main')" data-tab="main">👤 Профиль</button>
+                        ${extTabHtml}
                     </div>
 
-                    <!-- Имя (только для просмотра) -->
-                    <div class="profile-field">
-                        <label>👤 Имя</label>
-                        <div class="profile-field-row">
-                            <input type="text" id="profileName"
-                                   value="${user.name || ''}"
-                                   placeholder="Имя">
+                    <!-- Панель: Основные данные -->
+                    <div class="profile-tab-panel active" id="profilePanel-main">
+                        <div class="profile-field">
+                            <label>📱 Номер телефона</label>
+                            <div class="profile-field-row">
+                                <input type="tel" id="profilePhone" value="${user.phone || ''}" placeholder="+7 (___) ___-__-__">
+                            </div>
                         </div>
+                        <div class="profile-field">
+                            <label>👤 Имя</label>
+                            <div class="profile-field-row">
+                                <input type="text" id="profileName" value="${user.name || ''}" placeholder="Имя">
+                            </div>
+                        </div>
+                        <div class="profile-field">
+                            <label>✉ Email</label>
+                            <div class="profile-field-row">
+                                <input type="text" value="${user.email || ''}" readonly>
+                            </div>
+                        </div>
+                        <div class="profile-field">
+                            <label>🎖 Роль</label>
+                            <div class="profile-field-row">
+                                <input type="text" value="${roleName}" readonly>
+                            </div>
+                        </div>
+                        <div class="profile-field">
+                            <label>📅 В системе с</label>
+                            <div class="profile-field-row">
+                                <input type="text" value="${user.created_at ? new Date(user.created_at).toLocaleDateString('ru-RU') : '—'}" readonly>
+                            </div>
+                        </div>
+                        <button class="profile-save-btn" id="profileSaveBtn" onclick="saveProfileData()">💾 Сохранить</button>
                     </div>
 
-                    <!-- Email (readonly) -->
-                    <div class="profile-field">
-                        <label>✉ Email</label>
-                        <div class="profile-field-row">
-                            <input type="text" value="${user.email || ''}" readonly>
+                    <!-- Панель: Внешние системы (только manager+) -->
+                    ${isManager ? `
+                    <div class="profile-tab-panel" id="profilePanel-ext">
+                        <div class="ext-creds-block" id="satsCredsBlock">
+                            <h4>🌐 bi.sats.spb.ru</h4>
+                            <div class="ext-creds-status" id="satsCredsStatus">⏳ Проверяем...</div>
+                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                                <button class="ext-creds-toggle" id="satsCredsToggleBtn" onclick="toggleSatsCredsForm()">⚙️ Настроить</button>
+                                <button class="ext-creds-delete-btn" id="satsCredsDeleteBtn" onclick="deleteSatsCreds()" style="display:none">🗑 Удалить</button>
+                            </div>
+                            <div class="ext-creds-form" id="satsCredsForm">
+                                <div class="profile-field" style="margin-top:12px">
+                                    <label>Имя пользователя</label>
+                                    <div class="profile-field-row">
+                                        <input type="text" id="satsUsername" placeholder="dispatcher" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="profile-field">
+                                    <label>Пароль</label>
+                                    <div class="profile-field-row" style="position:relative">
+                                        <input type="password" id="satsPassword" placeholder="••••••••" autocomplete="new-password" style="padding-right:40px">
+                                        <button onclick="toggleSatsPasswordVisibility()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(0,212,255,0.6);font-size:16px" id="satsEyeBtn">👁</button>
+                                    </div>
+                                </div>
+                                <button class="profile-save-btn" id="satsCredsSaveBtn" onclick="saveSatsCreds()" style="margin-top:8px">💾 Сохранить доступ</button>
+                            </div>
                         </div>
-                    </div>
-
-                    <!-- Роль (readonly) -->
-                    <div class="profile-field">
-                        <label>🎖 Роль</label>
-                        <div class="profile-field-row">
-                            <input type="text" value="${roleName}" readonly>
-                        </div>
-                    </div>
-
-                    <!-- Дата регистрации -->
-                    <div class="profile-field">
-                        <label>📅 В системе с</label>
-                        <div class="profile-field-row">
-                            <input type="text" value="${user.created_at ? new Date(user.created_at).toLocaleDateString('ru-RU') : '—'}" readonly>
-                        </div>
-                    </div>
-
-                    <button class="profile-save-btn" id="profileSaveBtn" onclick="saveProfileData()">
-                        💾 Сохранить
-                    </button>
+                        <p style="font-size:11px;color:rgba(255,255,255,0.3);line-height:1.5">
+                            🔒 Пароль хранится зашифрованным. На фронтенд не передаётся. Используется только для синхронизации площадок.
+                        </p>
+                    </div>` : ''}
                 </div>
             `;
+
+            // Если руководитель — загружаем текущий статус кредов
+            if (isManager) loadSatsCreds();
         }
+
+        // Переключение вкладок профиля
+        window.switchProfileTab = function(tab) {
+            document.querySelectorAll('.profile-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            document.querySelectorAll('.profile-tab-panel').forEach(p => p.classList.toggle('active', p.id === 'profilePanel-' + tab));
+        };
+
+        // Загрузить текущий статус кредов bi.sats.spb.ru
+        window.loadSatsCreds = async function() {
+            const statusEl  = document.getElementById('satsCredsStatus');
+            const deleteBtn = document.getElementById('satsCredsDeleteBtn');
+            if (!statusEl) return;
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                const res  = await fetch(window.SUPABASE_CONFIG.url + '/functions/v1/save-sats-creds', {
+                    headers: { 'Authorization': 'Bearer ' + session.access_token }
+                });
+                const json = await res.json();
+                if (json.configured) {
+                    const updAt = json.updated_at ? new Date(json.updated_at).toLocaleDateString('ru-RU') : '';
+                    const by    = json.updated_by_name ? ' (' + json.updated_by_name + ')' : '';
+                    statusEl.innerHTML = `✅ Настроено: пользователь <span>${json.username}</span>, пароль задан &bull; обновлено ${updAt}${by}`;
+                    document.getElementById('satsUsername').value = json.username;
+                    if (deleteBtn) deleteBtn.style.display = 'inline-block';
+                } else {
+                    statusEl.innerHTML = '⚠️ Не настроено. Синхронизация площадок недоступна.';
+                    if (deleteBtn) deleteBtn.style.display = 'none';
+                }
+            } catch(e) {
+                if (statusEl) statusEl.textContent = 'Ошибка проверки: ' + e.message;
+            }
+        };
+
+        window.toggleSatsCredsForm = function() {
+            const form = document.getElementById('satsCredsForm');
+            if (form) form.classList.toggle('open');
+        };
+
+        window.toggleSatsPasswordVisibility = function() {
+            const inp = document.getElementById('satsPassword');
+            const btn = document.getElementById('satsEyeBtn');
+            if (!inp) return;
+            const isHidden = inp.type === 'password';
+            inp.type = isHidden ? 'text' : 'password';
+            if (btn) btn.textContent = isHidden ? '🙈' : '👁';
+        };
+
+        window.saveSatsCreds = async function() {
+            const username = document.getElementById('satsUsername')?.value?.trim();
+            const password = document.getElementById('satsPassword')?.value;
+            const btn = document.getElementById('satsCredsSaveBtn');
+            if (!username || !password) { showToast('Введите логин и пароль'); return; }
+            btn.disabled = true; btn.textContent = 'Сохраняю…';
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                const res = await fetch(window.SUPABASE_CONFIG.url + '/functions/v1/save-sats-creds', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || 'Ошибка');
+                showToast('✅ Данные доступа сохранены');
+                document.getElementById('satsCredsForm').classList.remove('open');
+                document.getElementById('satsPassword').value = '';
+                await loadSatsCreds();
+            } catch(e) {
+                showToast('Ошибка: ' + e.message);
+            } finally {
+                btn.disabled = false; btn.textContent = '💾 Сохранить доступ';
+            }
+        };
+
+        window.deleteSatsCreds = async function() {
+            if (!confirm('Удалить данные доступа к bi.sats.spb.ru?')) return;
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                await fetch(window.SUPABASE_CONFIG.url + '/functions/v1/save-sats-creds', {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + session.access_token }
+                });
+                showToast('Данные удалены');
+                await loadSatsCreds();
+            } catch(e) { showToast('Ошибка: ' + e.message); }
+        };
 
         // Сохранить телефон и имя
         window.saveProfileData = async function() {
