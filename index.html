@@ -6823,22 +6823,24 @@
                                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                                     <div>
                                         <div style="font-size:11px;color:#EF4444;margin-bottom:4px">⬅ Старое</div>
-                                        ${change.old_equipment_mark ? `<div style="font-size:12px">Марка: ${change.old_equipment_mark}</div>` : ''}
-                                        ${change.old_equipment_model ? `<div style="font-size:12px">Модель: ${change.old_equipment_model}</div>` : ''}
-                                        ${change.old_equipment_serial ? `<div style="font-size:12px">S/N: ${change.old_equipment_serial}</div>` : ''}
-                                        ${change.old_equipment_inventory ? `<div style="font-size:12px">Инв: ${change.old_equipment_inventory}</div>` : ''}
+                                        ${(change.old_value?.mark || change.old_value?.mark === '') ? `<div style="font-size:12px">Марка: ${change.old_value.mark || '—'}</div>` : ''}
+                                        ${change.old_value?.model ? `<div style="font-size:12px">Модель: ${change.old_value.model}</div>` : ''}
+                                        ${change.old_value?.serial ? `<div style="font-size:12px">S/N: ${change.old_value.serial}</div>` : ''}
+                                        ${change.old_value?.inventory ? `<div style="font-size:12px">Инв: ${change.old_value.inventory}</div>` : ''}
+                                        ${(!change.old_value || Object.keys(change.old_value).every(k => !change.old_value[k])) ? `<div style="font-size:12px;color:var(--text-muted)">—</div>` : ''}
                                     </div>
                                     <div>
                                         <div style="font-size:11px;color:#10B981;margin-bottom:4px">➡ Новое</div>
-                                        ${change.new_equipment_mark ? `<div style="font-size:12px">Марка: ${change.new_equipment_mark}</div>` : ''}
-                                        ${change.new_equipment_model ? `<div style="font-size:12px">Модель: ${change.new_equipment_model}</div>` : ''}
-                                        ${change.new_equipment_serial ? `<div style="font-size:12px">S/N: ${change.new_equipment_serial}</div>` : ''}
-                                        ${change.new_equipment_inventory ? `<div style="font-size:12px">Инв: ${change.new_equipment_inventory}</div>` : ''}
+                                        ${change.new_value?.mark ? `<div style="font-size:12px">Марка: ${change.new_value.mark}</div>` : ''}
+                                        ${change.new_value?.model ? `<div style="font-size:12px">Модель: ${change.new_value.model}</div>` : ''}
+                                        ${change.new_value?.serial ? `<div style="font-size:12px">S/N: ${change.new_value.serial}</div>` : ''}
+                                        ${change.new_value?.inventory ? `<div style="font-size:12px">Инв: ${change.new_value.inventory}</div>` : ''}
+                                        ${(!change.new_value || Object.keys(change.new_value).every(k => !change.new_value[k])) ? `<div style="font-size:12px;color:var(--text-muted)">—</div>` : ''}
                                     </div>
                                 </div>
-                                ${change.change_reason ? `
+                                ${change.comment ? `
                                     <div style="margin-top:8px;padding:8px;background:rgba(239,68,68,0.1);border-radius:6px;font-size:12px">
-                                        Причина: ${change.change_reason}
+                                        Причина: ${change.comment}
                                     </div>
                                 ` : ''}
                             </div>
@@ -9460,22 +9462,24 @@
                                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                                     <div>
                                         <div style="font-size:11px;color:#EF4444;margin-bottom:4px">⬅ Старое</div>
-                                        ${change.old_equipment_mark ? `<div style="font-size:12px">Марка: ${change.old_equipment_mark}</div>` : ''}
-                                        ${change.old_equipment_model ? `<div style="font-size:12px">Модель: ${change.old_equipment_model}</div>` : ''}
-                                        ${change.old_equipment_serial ? `<div style="font-size:12px">S/N: ${change.old_equipment_serial}</div>` : ''}
-                                        ${change.old_equipment_inventory ? `<div style="font-size:12px">Инв: ${change.old_equipment_inventory}</div>` : ''}
+                                        ${(change.old_value?.mark || change.old_value?.mark === '') ? `<div style="font-size:12px">Марка: ${change.old_value.mark || '—'}</div>` : ''}
+                                        ${change.old_value?.model ? `<div style="font-size:12px">Модель: ${change.old_value.model}</div>` : ''}
+                                        ${change.old_value?.serial ? `<div style="font-size:12px">S/N: ${change.old_value.serial}</div>` : ''}
+                                        ${change.old_value?.inventory ? `<div style="font-size:12px">Инв: ${change.old_value.inventory}</div>` : ''}
+                                        ${(!change.old_value || Object.keys(change.old_value).every(k => !change.old_value[k])) ? `<div style="font-size:12px;color:var(--text-muted)">—</div>` : ''}
                                     </div>
                                     <div>
                                         <div style="font-size:11px;color:#10B981;margin-bottom:4px">➡ Новое</div>
-                                        ${change.new_equipment_mark ? `<div style="font-size:12px">Марка: ${change.new_equipment_mark}</div>` : ''}
-                                        ${change.new_equipment_model ? `<div style="font-size:12px">Модель: ${change.new_equipment_model}</div>` : ''}
-                                        ${change.new_equipment_serial ? `<div style="font-size:12px">S/N: ${change.new_equipment_serial}</div>` : ''}
-                                        ${change.new_equipment_inventory ? `<div style="font-size:12px">Инв: ${change.new_equipment_inventory}</div>` : ''}
+                                        ${change.new_value?.mark ? `<div style="font-size:12px">Марка: ${change.new_value.mark}</div>` : ''}
+                                        ${change.new_value?.model ? `<div style="font-size:12px">Модель: ${change.new_value.model}</div>` : ''}
+                                        ${change.new_value?.serial ? `<div style="font-size:12px">S/N: ${change.new_value.serial}</div>` : ''}
+                                        ${change.new_value?.inventory ? `<div style="font-size:12px">Инв: ${change.new_value.inventory}</div>` : ''}
+                                        ${(!change.new_value || Object.keys(change.new_value).every(k => !change.new_value[k])) ? `<div style="font-size:12px;color:var(--text-muted)">—</div>` : ''}
                                     </div>
                                 </div>
-                                ${change.change_reason ? `
+                                ${change.comment ? `
                                     <div style="margin-top:8px;padding:8px;background:rgba(239,68,68,0.1);border-radius:6px;font-size:12px">
-                                        Причина: ${change.change_reason}
+                                        Причина: ${change.comment}
                                     </div>
                                 ` : ''}
                             </div>
@@ -10178,14 +10182,18 @@
                 const equipmentChangeData = {
                     task_id: null,  // Для монтажей task_id не используем
                     installation_id: instId,
-                    old_equipment_mark: oldMark,
-                    old_equipment_model: formData.get('old_model'),
-                    old_equipment_serial: formData.get('old_serial'),
-                    old_equipment_inventory: formData.get('old_inventory'),
-                    new_equipment_mark: newMark,
-                    new_equipment_model: formData.get('new_model'),
-                    new_equipment_serial: formData.get('new_serial'),
-                    new_equipment_inventory: formData.get('new_inventory'),
+                    old_value: JSON.stringify({
+                        mark: oldMark,
+                        model: formData.get('old_model'),
+                        serial: formData.get('old_serial'),
+                        inventory: formData.get('old_inventory')
+                    }),
+                    new_value: JSON.stringify({
+                        mark: newMark,
+                        model: formData.get('new_model'),
+                        serial: formData.get('new_serial'),
+                        inventory: formData.get('new_inventory')
+                    }),
                     changed_by: currentUserProfile.id,
                     changed_at: new Date().toISOString()
                 };
