@@ -10,7 +10,7 @@
 
 | Платформа | Ссылка |
 |-----------|--------|
-| Web (PWA) | https://tkolya-dotcom.github.io/Korneo/ |
+| Web (PWA) | https://tkolya-dotcom.github.io/Korneo-2.0/ |
 | Android APK | [GitHub Releases](https://github.com/tkolya-dotcom/Korneo/releases) — файл `app-debug.apk` |
 
 ---
