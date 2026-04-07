@@ -184,8 +184,16 @@ Korneo/
 Создайте `.env` на основе `.env.example`:
 
 ```env
+# Frontend (Vite)
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+
+# Backend
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Other integrations
 FIREBASE_API_KEY=your-api-key
 MAPBOX_TOKEN=your-mapbox-token
 VAPID_PUBLIC_KEY=your-vapid-key
@@ -200,7 +208,7 @@ VAPID_PUBLIC_KEY=your-vapid-key
 
 ## 🔐 Безопасность
 
-- **JWT** — аутентификация через Supabase Auth
+- **Supabase Auth JWT** — единый auth-поток (web-клиент логинится через Supabase, backend валидирует тот же access token)
 - **RLS** — фильтрация данных на уровне PostgreSQL
 - **HTTPS** — шифрование трафика
 - **CORS** — ограничение разрешённых доменов

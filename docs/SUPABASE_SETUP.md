@@ -383,3 +383,28 @@ WHERE email = 'user@example.com';
 ---
 
 **Версия:** 1.0 | **Дата:** 27.03.2026
+
+---
+
+## 🔐 Единая модель аутентификации (web + backend)
+
+В проекте используется только **Supabase Auth end-to-end**:
+
+- Web-клиент выполняет вход/регистрацию через `supabase.auth.signInWithPassword` и `supabase.auth.signUp`.
+- Backend **не выдаёт собственные JWT** и не использует `JWT_SECRET` для auth.
+- Backend принимает `Authorization: Bearer <access_token>` и валидирует токен через Supabase Auth.
+
+### Переменные окружения
+
+```env
+# Frontend (Vite)
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+
+# Backend
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+> `JWT_SECRET` для текущего auth-потока не требуется.

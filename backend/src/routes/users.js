@@ -48,7 +48,7 @@ router.get('/status', authenticateToken, async (req, res) => {
 // Update user heartbeat (mark as online)
 router.post('/heartbeat', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -77,7 +77,7 @@ router.post('/heartbeat', authenticateToken, async (req, res) => {
 // Mark user as offline (for logout or tab close)
 router.post('/offline', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
