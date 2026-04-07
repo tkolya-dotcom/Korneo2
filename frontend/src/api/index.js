@@ -30,7 +30,7 @@ export const authApi = {
       
     if (userError) throw userError;
     
-    return { token: data.session.access_token, user };
+    return { token: data.session?.access_token || null, user };
   },
   
   register: async (email, password, name, role) => {
@@ -46,7 +46,7 @@ export const authApi = {
       
     if (userError) throw userError;
     
-    return { token: data.session.access_token, user };
+    return { token: data.session?.access_token || null, user };
   },
   
   getMe: async () => {
