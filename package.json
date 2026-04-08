@@ -9,8 +9,9 @@
   ],
   "scripts": {
     "web:start": "yarn workspace web start",
-    "mobile:start": "yarn workspace mobile start",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "mobile:start": "npm run -w apps/mobile start",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "mobile:typecheck": "npm run -w apps/mobile typecheck"
   },
   "keywords": [
     "task-manager",
