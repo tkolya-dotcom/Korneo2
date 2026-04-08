@@ -11,6 +11,7 @@ import ProjectDetail from './pages/ProjectDetail';
 import TaskDetail from './pages/TaskDetail';
 import InstallationDetail from './pages/InstallationDetail';
 import Archive from './pages/Archive';
+import Messenger from './pages/Messenger';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -70,6 +71,11 @@ function App() {
         <Route path="/archive" element={
           <PrivateRoute>
             <Archive />
+          </PrivateRoute>
+        } />
+        <Route path="/messenger" element={
+          <PrivateRoute>
+            <Messenger />
           </PrivateRoute>
         } />
       </Routes>

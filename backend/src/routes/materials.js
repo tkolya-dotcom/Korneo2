@@ -1,7 +1,10 @@
 import express from 'express';
 import { supabase } from '../config/supabase.js';
+import { authenticateToken, requireManager } from '../middleware/auth.js';
 
 const router = express.Router();
+
+router.use(authenticateToken);
 
 // Get all materials
 router.get('/', async (req, res) => {
@@ -29,30 +32,6 @@ router.get('/', async (req, res) => {
     res.json({ materials: data });
   } catch (err) {
     console.error('Error fetching materials:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get material by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const { data, error } = await supabase
-      .from('materials')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    
-    if (!data) {
-      return res.status(404).json({ error: 'Material not found' });
-    }
-    
-    res.json({ material: data });
-  } catch (err) {
-    console.error('Error fetching material:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -141,8 +120,32 @@ router.get('/categories/list', async (req, res) => {
   }
 });
 
+// Get material by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const { data, error } = await supabase
+      .from('materials')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) throw error;
+    
+    if (!data) {
+      return res.status(404).json({ error: 'Material not found' });
+    }
+    
+    res.json({ material: data });
+  } catch (err) {
+    console.error('Error fetching material:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Create material (manager only)
-router.post('/', async (req, res) => {
+router.post('/', requireManager, async (req, res) => {
   try {
     const { name, category, default_unit, is_optional, comment } = req.body;
     
@@ -166,7 +169,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update material (manager only)
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireManager, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, category, default_unit, is_optional, comment } = req.body;
@@ -188,7 +191,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete material (manager only)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireManager, async (req, res) => {
   try {
     const { id } = req.params;
     

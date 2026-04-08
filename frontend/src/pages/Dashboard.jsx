@@ -5,7 +5,7 @@ import { projectsApi, tasksApi, installationsApi, purchaseRequestsApi } from '..
 import UserStatusCard from '../components/UserStatusCard';
 
 const Dashboard = () => {
-  const { user, isManager, logout } = useAuth();
+  const { user, logout } = useAuth();
   const [stats, setStats] = useState({
     projects: 0,
     tasks: 0,
@@ -141,6 +141,7 @@ const Dashboard = () => {
           <Link to="/tasks">Задачи</Link>
           <Link to="/installations">Монтажи</Link>
           <Link to="/purchase-requests">Заявки</Link>
+          <Link to="/messenger">Чат</Link>
         </nav>
         <div className="header-user">
           <span>{user.name} ({user.role === 'manager' ? 'Руководитель' : 'Исполнитель'})</span>
@@ -181,6 +182,14 @@ const Dashboard = () => {
             <p>Ожидающих заявок</p>
             <Link to="/purchase-requests" className="btn btn-primary" style={{ marginTop: '10px', display: 'inline-block' }}>
               Подробнее
+            </Link>
+          </div>
+
+          <div className="stat-card">
+            <h3>💬</h3>
+            <p>Мессенджер</p>
+            <Link to="/messenger" className="btn btn-primary" style={{ marginTop: '10px', display: 'inline-block' }}>
+              Открыть
             </Link>
           </div>
 </div>

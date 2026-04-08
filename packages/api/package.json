@@ -1,0 +1,13 @@
+{
+  "name": "@korneo/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./supabase": "./src/supabase.ts",
+    "./auth": "./src/auth.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.52.1"
+  }
+}

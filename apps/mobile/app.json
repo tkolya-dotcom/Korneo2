@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Korneo Mobile",
+    "slug": "korneo-mobile",
+    "scheme": "korneo",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "platforms": ["android", "ios"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

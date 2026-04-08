@@ -5,11 +5,16 @@
   "description": "ООО Корнео — мобильное приложение и веб-интерфейс (Monorepo)",
   "workspaces": [
     "apps/*",
+    "frontend",
+    "backend",
+    "js",
     "packages/*"
   ],
   "scripts": {
-    "web:start": "yarn workspace web start",
-    "mobile:start": "yarn workspace mobile start",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:build": "npm --prefix frontend run build",
+    "backend:dev": "npm --prefix backend run dev",
+    "backend:start": "npm --prefix backend run start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
