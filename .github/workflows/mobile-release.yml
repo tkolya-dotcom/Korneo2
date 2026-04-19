@@ -57,23 +57,9 @@ jobs:
 
       - name: Patch Kotlin version in android/build.gradle
         run: |
-          # Force Kotlin 1.9.25 for all subprojects to fix expo-modules-core compile error
           sed -i 's/kotlinVersion = .*/kotlinVersion = "1.9.25"/' android/build.gradle || true
-          # Also add subprojects kotlin version override if not present
-          if ! grep -q 'resolutionStrategy' android/build.gradle; then
-            cat >> android/build.gradle << 'EOF'
-
-subprojects {
-  configurations.all {
-    resolutionStrategy {
-      force "org.jetbrains.kotlin:kotlin-stdlib:1.9.25"
-      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.25"
-      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.25"
-    }
-  }
-}
-EOF
-          fi
+          echo "Current kotlinVersion:"
+          grep 'kotlinVersion' android/build.gradle || true
 
       - name: Patch PermissionsService.kt (fix null-safety bug)
         run: |
@@ -90,7 +76,7 @@ EOF
         run: chmod +x android/gradlew
 
       - name: Build Release APK
-        run: cd android && ./gradlew assembleRelease --no-daemon --info 2>&1 | tail -200
+        run: cd android && ./gradlew assembleRelease --no-daemon --info 2>&1 | tail -300
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
 
