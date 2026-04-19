@@ -12,7 +12,12 @@
       "resizeMode": "contain"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      ["expo-splash-screen", {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0f172a"
+      }]
     ],
     "android": {
       "package": "com.tkolya.korneo",
