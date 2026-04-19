@@ -1,0 +1,100 @@
+name: Build Korneo iOS IPA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/ios-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: apps/mobile
+        run: npm install
+
+      - name: Create .env file
+        working-directory: apps/mobile
+        run: |
+          echo "EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" > .env
+          echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}" >> .env
+
+      - name: Expo Prebuild (generate ios/)
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform ios --clean
+        env:
+          NODE_ENV: production
+
+      - name: Install CocoaPods
+        working-directory: apps/mobile/ios
+        run: pod install
+
+      - name: Build iOS IPA (unsigned)
+        working-directory: apps/mobile
+        run: |
+          xcodebuild \
+            -workspace ios/Korneo.xcworkspace \
+            -scheme Korneo \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath $RUNNER_TEMP/Korneo.xcarchive \
+            archive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
+            | xcpretty
+
+      - name: Export IPA (unsigned)
+        run: |
+          mkdir -p $RUNNER_TEMP/ipa
+          cd $RUNNER_TEMP/Korneo.xcarchive/Products/Applications
+          mkdir -p Payload
+          cp -r Korneo.app Payload/
+          zip -r $RUNNER_TEMP/ipa/Korneo-unsigned.ipa Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: korneo-ios-ipa
+          path: ${{ runner.temp }}/ipa/Korneo-unsigned.ipa
+          retention-days: 30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: success()
+        with:
+          tag_name: ios-v${{ github.run_number }}
+          name: Korneo iOS IPA v${{ github.run_number }}
+          files: ${{ runner.temp }}/ipa/Korneo-unsigned.ipa
+          body: |
+            ## Korneo iOS (Unsigned IPA)
+            
+            Unsigned IPA для установки через AltStore, Sideloadly или ESign.
+            
+            ### Установка:
+            - **AltStore**: перетащите IPA в AltStore
+            - **Sideloadly**: используйте Apple ID для подписи и установки
+            - **ESign** (с сертификатом): установите напрямую
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
