@@ -63,6 +63,7 @@ jobs:
       - name: Patch gradle.properties for Kotlin compatibility
         run: |
           echo "kotlinVersion=1.9.25" >> android/gradle.properties
+                    echo "android.kotlinVersion=1.9.25" >> android/gradle.properties
           echo "android.suppressKotlinVersionCompatibilityCheck=true" >> android/gradle.properties
           echo "org.jetbrains.kotlin.android.suppressGradlePluginCompatibility=true" >> android/gradle.properties
 
