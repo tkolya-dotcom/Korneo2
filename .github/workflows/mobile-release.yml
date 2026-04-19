@@ -51,6 +51,18 @@ jobs:
       - name: Expo Prebuild (generate android/)
         run: npx expo prebuild --platform android --clean --no-install
 
+      - name: Patch ExpoModulesCorePlugin.gradle (fix SoftwareComponent AGP 8.x)
+        run: |
+          PLUGIN_FILE="$(find . -path '*/expo-modules-core/android/ExpoModulesCorePlugin.gradle' | head -1)"
+          if [ -f "$PLUGIN_FILE" ]; then
+            echo "Patching $PLUGIN_FILE"
+            sed -i 's/components.release/components["release"]/g' "$PLUGIN_FILE"
+            sed -i 's/from components.release/from components["release"]/g' "$PLUGIN_FILE"
+            echo "Patch applied"
+          else
+            echo "Plugin file not found, skipping patch"
+          fi
+
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
