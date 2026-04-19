@@ -59,6 +59,11 @@ jobs:
       - name: Expo Prebuild
         run: npx expo prebuild --platform android --clean --no-install
 
+
+      - name: Patch Kotlin version in gradle.properties
+        run: |
+          echo "kotlinVersion=1.9.25" >> android/gradle.properties
+          echo "android.suppressKotlinVersionCompatibilityCheck=true" >> android/gradle.properties
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
