@@ -63,16 +63,24 @@ jobs:
           echo "Current kotlinVersion:"
           grep 'kotlinVersion' android/build.gradle || true
 
-      - name: Patch PermissionsService.kt (fix null-safety bug)
-        working-directory: apps/mobile
+      - name: Patch PermissionsService.kt (fix null-safety errors)
         run: |
-          FILE=$(find node_modules -name "PermissionsService.kt" 2>/dev/null | head -1)
+          FILE=$(find apps/mobile/node_modules/expo-modules-core -name "PermissionsService.kt" 2>/dev/null | head -1)
           if [ -n "$FILE" ]; then
             echo "Found: $FILE"
-            sed -i 's|parseNativeResult(receivePermissions, grantResults)|parseNativeResult(receivePermissions ?: emptyArray(), grantResults)|g' "$FILE"
-            echo "Patch applied"
+            # Fix line: parseNativeResult(receivePermissions, grantResults)
+            sed -i 's/parseNativeResult(receivePermissions, grantResults)/parseNativeResult(receivePermissions ?: emptyArray(), grantResults)/g' "$FILE"
+            # Fix any other nullable receiver calls (add ?: emptyArray() for array params)
+            sed -i 's/grantResults\.forEach/grantResults?.forEach/g' "$FILE"
+            sed -i 's/grantResults\.map/grantResults?.map/g' "$FILE"
+            sed -i 's/grantResults\.size/grantResults?.size ?: 0/g' "$FILE"
+            sed -i 's/grantResults\.isEmpty/grantResults?.isEmpty/g' "$FILE"
+            echo "Patches applied"
+            echo "--- Line 160-175 of patched file:"
+            sed -n '160,175p' "$FILE"
           else
-            echo "PermissionsService.kt not found"
+            echo "PermissionsService.kt not found - listing expo-modules-core:"
+            find apps/mobile/node_modules/expo-modules-core -name "*.kt" 2>/dev/null | head -20
           fi
 
       - name: Make gradlew executable
