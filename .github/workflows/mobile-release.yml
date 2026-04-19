@@ -62,27 +62,22 @@ jobs:
           sed -i 's/kotlinVersion = .*/kotlinVersion = "1.9.25"/' android/build.gradle || true
           grep 'kotlinVersion' android/build.gradle || true
 
-      - name: Patch PermissionsService.kt (fix null-safety errors)
+      - name: Patch PermissionsService.kt (fix requestedPermissions null-safety)
         run: |
-          # Search EVERYWHERE for PermissionsService.kt (it may be in root node_modules due to hoisting)
-          FILE=$(find . -path "*/expo-modules-core/android/src/main/java/expo/modules/adapters/react/permissions/PermissionsService.kt" 2>/dev/null | head -1)
-          if [ -z "$FILE" ]; then
-            FILE=$(find . -name "PermissionsService.kt" 2>/dev/null | head -1)
-          fi
+          FILE=$(find . -name "PermissionsService.kt" 2>/dev/null | grep -v '.cxx' | head -1)
           if [ -n "$FILE" ]; then
             echo "Found: $FILE"
-            sed -i 's/grantResults\.forEach/grantResults?.forEach/g' "$FILE"
-            sed -i 's/grantResults\.map{/grantResults?.map{/g' "$FILE"
-            sed -i 's/grantResults\.map {/grantResults?.map {/g' "$FILE"
-            sed -i 's/grantResults\.size/grantResults?.size ?: 0/g' "$FILE"
-            sed -i 's/grantResults\.isEmpty/grantResults?.isEmpty/g' "$FILE"
+            # Fix: requestedPermissions.contains -> requestedPermissions?.contains ?: false
+            sed -i 's/requestedPermissions\.contains(permission)/requestedPermissions?.contains(permission) ?: false/g' "$FILE"
+            # Also fix parseNativeResult and grantResults patterns
             sed -i 's/parseNativeResult(receivePermissions, grantResults)/parseNativeResult(receivePermissions ?: emptyArray(), grantResults)/g' "$FILE"
-            echo "All patches applied"
-            echo "--- Line 160-175:"
+            sed -i 's/grantResults\.forEach/grantResults?.forEach/g' "$FILE"
+            echo "Patches applied successfully"
+            echo "--- Lines 160-175:"
             sed -n '160,175p' "$FILE"
           else
-            echo "ERROR: PermissionsService.kt not found anywhere!"
-            find . -name "*.kt" 2>/dev/null | grep -i permission | head -10
+            echo "ERROR: PermissionsService.kt not found!"
+            find . -name "*.kt" 2>/dev/null | grep -i permission | head -5
           fi
 
       - name: Make gradlew executable
