@@ -54,15 +54,22 @@ jobs:
 
       - name: Patch PermissionsService.kt (null-safety fix)
         run: |
-          find . -path "*/expo-modules-core/android/src/main/java/expo/modules/adapters/react/permissions/PermissionsService.kt" | while read FILE; do
-            echo "Patching: $FILE"
-            sed -i 's/grantResults\.contains(/grantResults?.contains(/g' "$FILE"
-            sed -i 's/grantResults\.isNotEmpty/grantResults?.isNotEmpty/g' "$FILE"
-            sed -i 's/grantResults\.isEmpty/grantResults?.isEmpty/g' "$FILE"
-            sed -i 's/grantResults\.all(/grantResults?.all(/g' "$FILE"
-            sed -i 's/grantResults\.any(/grantResults?.any(/g' "$FILE"
-            echo "Patch done"
-          done
+          FILE=$(find . -path "*/expo-modules-core/android/src/main/java/expo/modules/adapters/react/permissions/PermissionsService.kt" | head -1)
+          if [ -n "$FILE" ]; then
+            echo "=== Lines 160-172 of PermissionsService.kt ==="
+            sed -n '160,172p' "$FILE"
+            echo "=== Applying patch ==="
+            python3 -c "
+import re, sys
+content = open('$FILE').read()
+# Fix: grantResults is nullable IntArray, replace .contains with ?.contains  
+content = re.sub(r'(\bgrantResults\b)(\.[a-zA-Z])', r'\\1?.\\2', content)
+open('$FILE', 'w').write(content)
+print('Patched successfully')
+"
+          else
+            echo "PermissionsService.kt not found"
+          fi
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
