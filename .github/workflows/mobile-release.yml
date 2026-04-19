@@ -49,15 +49,15 @@ jobs:
           echo "EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" > .env
           echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}" >> .env
 
-      - name: Create placeholder assets
+            - name: Create placeholder assets
         run: |
           mkdir -p assets
-          python3 -c "import struct,zlib;\nw,h=1024,1024;raw=b''.join(b'\x00'+(b'\x1e\x1e\x1e')*w for _ in range(h));\ndata=zlib.compress(raw);\nchunks=b'\x89PNG\r\n\x1a\n';\nimport functools;\ndef u32(n):return struct.pack('>I',n);\ndef chunk(t,d):c=zlib.crc32(t+d)&0xffffffff;return u32(len(d))+t+d+u32(c);\nimg=chunks+chunk(b'IHDR',struct.pack('>IIBBBBB',w,h,8,2,0,0,0))+chunk(b'IDAT',data)+chunk(b'IEND',b'');\nopen('assets/icon.png','wb').write(img)"
+          B64=iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+          echo $B64 | base64 -d > assets/icon.png
           cp assets/icon.png assets/adaptive-icon.png
-          python3 -c "import struct,zlib;\nw,h=1284,2778;raw=b''.join(b'\x00'+(b'\x1e\x1e\x1e')*w for _ in range(h));\ndata=zlib.compress(raw);\nchunks=b'\x89PNG\r\n\x1a\n';\nimport functools;\ndef u32(n):return struct.pack('>I',n);\ndef chunk(t,d):c=zlib.crc32(t+d)&0xffffffff;return u32(len(d))+t+d+u32(c);\nimg=chunks+chunk(b'IHDR',struct.pack('>IIBBBBB',w,h,8,2,0,0,0))+chunk(b'IDAT',data)+chunk(b'IEND',b'');\nopen('assets/splash.png','wb').write(img)"
-          python3 -c "import struct,zlib;\nw,h=32,32;raw=b''.join(b'\x00'+(b'\x1e\x1e\x1e')*w for _ in range(h));\ndata=zlib.compress(raw);\nchunks=b'\x89PNG\r\n\x1a\n';\ndef u32(n):return struct.pack('>I',n);\ndef chunk(t,d):c=zlib.crc32(t+d)&0xffffffff;return u32(len(d))+t+d+u32(c);\nimg=chunks+chunk(b'IHDR',struct.pack('>IIBBBBB',w,h,8,2,0,0,0))+chunk(b'IDAT',data)+chunk(b'IEND',b'');\nopen('assets/favicon.png','wb').write(img)"
-          echo "Assets created"
-
+          cp assets/icon.png assets/splash.png
+          cp assets/icon.png assets/favicon.png
+          echo "Placeholder assets created"
       - name: Expo Prebuild (generate android/ folder)
         run: npx expo prebuild --platform android --clean --no-install
 
