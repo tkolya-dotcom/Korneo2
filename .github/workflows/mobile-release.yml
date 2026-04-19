@@ -1,8 +1,11 @@
-name: Build Korneo Android APK
+name: Build Korneo Mobile APK
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/mobile-release.yml'
   workflow_dispatch:
 
 permissions:
@@ -20,66 +23,77 @@ jobs:
         working-directory: apps/mobile
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
 
-      - uses: actions/setup-java@v4
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: temurin
+          distribution: 'temurin'
 
-      - uses: android-actions/setup-android@v3
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Install Expo CLI
-        run: npm install -g @expo/cli
-
-      - name: Expo Prebuild
-        run: npx expo prebuild --platform android --clean
-
-      - name: Build APK
+      - name: Create .env file
         run: |
-          chmod +x android/gradlew
-          cd android && ./gradlew assembleRelease --no-daemon
+          echo "EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" > .env
+          echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}" >> .env
 
-      - name: Collect APK
-        id: apk
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          mkdir -p ../../artifacts
-          cp android/app/build/outputs/apk/release/app-release.apk \
-             ../../artifacts/korneo-v${VERSION}.apk
-          echo '{"version":"'$VERSION'","build":${{ github.run_number }},"date":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' \
-             > ../../artifacts/version.json
-
-      - name: Commit artifacts
-        run: |
-          git config user.email "actions@github.com"
-          git config user.name "GitHub Actions"
-          git add ../../artifacts/
-          git diff --staged --quiet || git commit -m "chore: release v${{ steps.apk.outputs.version }} [skip ci]"
-          git push
-        working-directory: apps/mobile
+      - name: Expo Prebuild (generate android/)
+        run: npx expo prebuild --platform android --clean --no-install
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: korneo-apk-v${{ steps.apk.outputs.version }}
-          path: artifacts/korneo-v${{ steps.apk.outputs.version }}.apk
+      - name: Set version in build.gradle
+        run: |
+          sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          sed -i "s/versionName \"1.0\"/versionName \"1.${{ github.run_number }}\"/" android/app/build.gradle
 
-      - uses: softprops/action-gh-release@v2
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build Release APK
+        run: |
+          cd android
+          ./gradlew assembleRelease \
+            -PversionCode=${{ github.run_number }} \
+            -PversionName="1.${{ github.run_number }}" \
+            --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: v${{ steps.apk.outputs.version }}-build${{ github.run_number }}
-          name: Korneo v${{ steps.apk.outputs.version }} (build ${{ github.run_number }})
-          files: artifacts/korneo-v${{ steps.apk.outputs.version }}.apk
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: korneo-mobile-apk-${{ github.run_number }}
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          retention-days: 30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "mobile-v1.${{ github.run_number }}"
+          name: "Korneo Mobile v1.${{ github.run_number }}"
+          body: |
+            ## Korneo Mobile v1.${{ github.run_number }}
+
+            Автоматическая сборка из ветки `main`.
+
+            ### Установка на Android:
+            1. Скачай `app-release-unsigned.apk`
+            2. Настройки → Безопасность → Разрешить установку из неизвестных источников
+            3. Открой файл и установи
+
+            ### Сборка: `${{ github.sha }}`
+          files: apps/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          token: ${{ secrets.GITHUB_TOKEN }}
