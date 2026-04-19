@@ -1,4 +1,4 @@
-name: Build Korneo Android APK (Native Gradle)
+name: Build Korneo Android APK
 
 on:
   push:
@@ -20,23 +20,19 @@ jobs:
         working-directory: apps/mobile
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: temurin
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
 
       - name: Install dependencies
         run: npm install
@@ -44,53 +40,53 @@ jobs:
       - name: Install Expo CLI
         run: npm install -g @expo/cli
 
-      - name: Expo Prebuild (generates android/ with kotlinVersion=1.9.25)
+      - name: Create placeholder assets
+        run: |
+          mkdir -p assets
+          convert -size 1024x1024 xc:'#0f172a' assets/icon.png
+          convert -size 1024x1024 xc:'#0f172a' assets/adaptive-icon.png
+          convert -size 1284x2778 xc:'#0f172a' assets/splash.png
+
+      - name: Expo Prebuild
         run: npx expo prebuild --platform android --clean
 
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
-
-      - name: Build Release APK
-        run: cd android && ./gradlew assembleRelease --no-daemon
-
-      - name: Get version
-        id: version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
-      - name: Rename APK
+      - name: Build APK
         run: |
+          chmod +x android/gradlew
+          cd android && ./gradlew assembleRelease --no-daemon
+
+      - name: Collect APK
+        id: apk
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
           mkdir -p ../../artifacts
           cp android/app/build/outputs/apk/release/app-release.apk \
-             ../../artifacts/korneo-v${{ steps.version.outputs.version }}.apk
+             ../../artifacts/korneo-v${VERSION}.apk
+          echo '{"version":"'$VERSION'","build":${{ github.run_number }},"date":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' \
+             > ../../artifacts/version.json
 
-      - name: Write version.json
-        run: |
-          echo '{"version":"${{ steps.version.outputs.version }}","build":${{ github.run_number }},"date":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' \
-            > ../../artifacts/version.json
-
-      - name: Commit version.json
+      - name: Commit artifacts
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
           git add ../../artifacts/
-          git diff --staged --quiet || git commit -m "chore: release v${{ steps.version.outputs.version }} [skip ci]"
+          git diff --staged --quiet || git commit -m "chore: release v${{ steps.apk.outputs.version }} [skip ci]"
           git push
         working-directory: apps/mobile
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: korneo-apk-v${{ steps.version.outputs.version }}
-          path: artifacts/korneo-v${{ steps.version.outputs.version }}.apk
+          name: korneo-apk-v${{ steps.apk.outputs.version }}
+          path: artifacts/korneo-v${{ steps.apk.outputs.version }}.apk
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.version }}-build${{ github.run_number }}
-          name: Korneo v${{ steps.version.outputs.version }} (build ${{ github.run_number }})
-          files: artifacts/korneo-v${{ steps.version.outputs.version }}.apk
+          tag_name: v${{ steps.apk.outputs.version }}-build${{ github.run_number }}
+          name: Korneo v${{ steps.apk.outputs.version }} (build ${{ github.run_number }})
+          files: artifacts/korneo-v${{ steps.apk.outputs.version }}.apk
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
