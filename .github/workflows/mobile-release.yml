@@ -18,6 +18,7 @@ jobs:
     defaults:
       run:
         working-directory: apps/mobile
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,18 +60,44 @@ jobs:
       - name: Expo Prebuild
         run: npx expo prebuild --platform android --clean --no-install
 
-
-      - name: Patch Kotlin version in gradle.properties
+      - name: Patch gradle.properties for Kotlin compatibility
         run: |
           echo "kotlinVersion=1.9.25" >> android/gradle.properties
           echo "android.suppressKotlinVersionCompatibilityCheck=true" >> android/gradle.properties
+          echo "org.jetbrains.kotlin.android.suppressGradlePluginCompatibility=true" >> android/gradle.properties
+
+      - name: Patch Kotlin version in build.gradle files
+        run: |
+          # Patch root build.gradle
+          if [ -f android/build.gradle ]; then
+            sed -i 's/kotlinVersion = "[0-9.]*"/kotlinVersion = "1.9.25"/g' android/build.gradle
+            sed -i 's/kotlin_version = "[0-9.]*"/kotlin_version = "1.9.25"/g' android/build.gradle
+            sed -i "s/ext.kotlin_version = '[0-9.]*'/ext.kotlin_version = '1.9.25'/g" android/build.gradle
+            sed -i 's/id "org.jetbrains.kotlin.android" version "[0-9.]*"/id "org.jetbrains.kotlin.android" version "1.9.25"/g' android/build.gradle
+          fi
+          # Patch settings.gradle if present
+          if [ -f android/settings.gradle ]; then
+            sed -i 's/id("org.jetbrains.kotlin.android") version "[0-9.]*"/id("org.jetbrains.kotlin.android") version "1.9.25"/g' android/settings.gradle
+          fi
+          echo "=== Kotlin references found ==="
+          grep -rn "kotlin" android/build.gradle || true
+
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Build Release APK
+      - name: Build Debug APK
         run: |
           cd android
-          ./gradlew assembleRelease -PversionCode=${{ github.run_number }} -PversionName=2.${{ github.run_number }} --no-daemon
+          ./gradlew assembleDebug \
+            -PversionCode=${{ github.run_number }} \
+            -PversionName=2.${{ github.run_number }} \
+            --no-daemon \
+            --stacktrace
+
+      - name: Rename APK
+        run: |
+          mkdir -p output
+          cp android/app/build/outputs/apk/debug/app-debug.apk output/korneo-v2.${{ github.run_number }}.apk
 
       - name: Write version.json
         working-directory: ${{ github.workspace }}
@@ -79,7 +106,7 @@ jobs:
           {
             "versionCode": ${{ github.run_number }},
             "versionName": "2.${{ github.run_number }}",
-            "downloadUrl": "https://github.com/tkolya-dotcom/Korneo2/releases/download/v2.${{ github.run_number }}/korneo.apk",
+            "downloadUrl": "https://github.com/tkolya-dotcom/Korneo2/releases/download/v2.${{ github.run_number }}/korneo-v2.${{ github.run_number }}.apk",
             "releaseNotes": "Native Expo build v2.${{ github.run_number }}"
           }
           EOF
@@ -96,8 +123,8 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: korneo-release-apk
-          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          name: korneo-debug-apk
+          path: apps/mobile/output/korneo-v2.${{ github.run_number }}.apk
           retention-days: 30
 
       - name: Create GitHub Release
@@ -105,7 +132,18 @@ jobs:
         with:
           tag_name: v2.${{ github.run_number }}
           name: Korneo v2.${{ github.run_number }}
-          files: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          body: |
+            ## Korneo Native App v2.${{ github.run_number }}
+
+            Нативное Android приложение собранное из Expo React Native.
+
+            ### Установка:
+            1. Скачай `korneo-v2.${{ github.run_number }}.apk`
+            2. Настройки → Безопасность → Разрешить установку из неизвестных источников
+            3. Открой и установи
+
+            ### Изменения:
+          files: apps/mobile/output/korneo-v2.${{ github.run_number }}.apk
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
