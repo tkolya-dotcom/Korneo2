@@ -52,13 +52,28 @@ jobs:
         env:
           NODE_ENV: production
 
+      - name: Patch PermissionsService.kt (null-safety fix)
+        working-directory: apps/mobile
+        run: |
+          FILE="node_modules/expo-modules-core/android/src/main/java/expo/modules/adapters/react/permissions/PermissionsService.kt"
+          if [ -f "$FILE" ]; then
+            sed -i 's/grantResults\.contains(/grantResults?.contains(/g' "$FILE"
+            sed -i 's/grantResults\.isNotEmpty/grantResults?.isNotEmpty/g' "$FILE"
+            sed -i 's/grantResults\.isEmpty/grantResults?.isEmpty/g' "$FILE"
+            sed -i 's/grantResults\.all(/grantResults?.all(/g' "$FILE"
+            sed -i 's/grantResults\.any(/grantResults?.any(/g' "$FILE"
+            echo "Patched PermissionsService.kt"
+          else
+            echo "File not found, skipping"
+          fi
+
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
       - name: Build Release APK
         run: cd android && ./gradlew assembleRelease --no-daemon -Pkotlin.incremental=false
         env:
-          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false -Dkotlin.compiler.execution.strategy=in-process"
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
