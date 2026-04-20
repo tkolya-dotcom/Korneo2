@@ -67,35 +67,61 @@ jobs:
           FILE=$(find . -name "PermissionsService.kt" 2>/dev/null | grep -v '.cxx' | head -1)
           if [ -n "$FILE" ]; then
             echo "Found: $FILE"
-            # Fix: requestedPermissions.contains -> requestedPermissions?.contains ?: false
             sed -i 's/requestedPermissions\.contains(permission)/requestedPermissions?.contains(permission) ?: false/g' "$FILE"
-            # Also fix parseNativeResult and grantResults patterns
             sed -i 's/parseNativeResult(receivePermissions, grantResults)/parseNativeResult(receivePermissions ?: emptyArray(), grantResults)/g' "$FILE"
             sed -i 's/grantResults\.forEach/grantResults?.forEach/g' "$FILE"
             echo "Patches applied successfully"
-            echo "--- Lines 160-175:"
-            sed -n '160,175p' "$FILE"
           else
-            echo "ERROR: PermissionsService.kt not found!"
-            find . -name "*.kt" 2>/dev/null | grep -i permission | head -5
+            echo "PermissionsService.kt not found, skipping patch"
           fi
 
       - name: Make gradlew executable
         working-directory: apps/mobile
         run: chmod +x android/gradlew
 
-      - name: Build Release APK
+      - name: Build Release APK (unsigned)
         working-directory: apps/mobile
         run: cd android && ./gradlew assembleRelease --no-daemon -Pkotlin.incremental=false
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
+
+      - name: Generate signing keystore
+        run: |
+          keytool -genkeypair \
+            -keystore korneo-release.keystore \
+            -alias korneo \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass korneo123 \
+            -keypass korneo123 \
+            -dname "CN=Korneo, OU=Mobile, O=Korneo, L=SPb, ST=SPb, C=RU" \
+            -noprompt
+
+      - name: Align and sign APK
+        run: |
+          APK_UNSIGNED=$(find apps/mobile/android/app/build/outputs/apk/release -name "app-release-unsigned.apk" | head -1)
+          if [ -z "$APK_UNSIGNED" ]; then
+            APK_UNSIGNED=$(find apps/mobile/android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          fi
+          echo "Signing: $APK_UNSIGNED"
+          $ANDROID_SDK_ROOT/build-tools/35.0.0/zipalign -v -p 4 "$APK_UNSIGNED" korneo-aligned.apk
+          $ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner sign \
+            --ks korneo-release.keystore \
+            --ks-key-alias korneo \
+            --ks-pass pass:korneo123 \
+            --key-pass pass:korneo123 \
+            --out korneo-release-signed.apk \
+            korneo-aligned.apk
+          echo "APK signed successfully"
+          ls -lh korneo-release-signed.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         if: success()
         with:
           name: korneo-release-apk
-          path: apps/mobile/android/app/build/outputs/apk/release/app-release*.apk
+          path: korneo-release-signed.apk
           retention-days: 30
 
       - name: Create GitHub Release
@@ -104,7 +130,15 @@ jobs:
         with:
           tag_name: mobile-v${{ github.run_number }}
           name: Korneo Mobile APK v${{ github.run_number }}
-          files: apps/mobile/android/app/build/outputs/apk/release/app-release*.apk
+          files: korneo-release-signed.apk
+          body: |
+            ## Korneo Android APK v${{ github.run_number }}
+
+            ### Установка на Android:
+            1. Скачайте `korneo-release-signed.apk`
+            2. Откройте файл на телефоне
+            3. Разрешите установку из неизвестных источников
+            4. Нажмите "Установить"
           generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
