@@ -4,24 +4,7 @@ import { useRouter } from 'expo-router';
 import { useAuth, ROLES } from '@/src/providers/AuthProvider';
 import { projectsApi, tasksApi, installationsApi, purchaseRequestsApi } from '@/src/lib/supabase';
 
-<<<<<<< HEAD
-// Cyberpunk тема - как в веб-приложении (cyan)
-const COLORS = {
-  bg: '#0A0A0F',
-  card: '#1A1A2E',
-  accent: '#00D9FF',
-  accent2: '#00FF88',
-  text: '#E0E0E0',
-  sub: '#8892a0',
-  border: 'rgba(0, 217, 255, 0.15)',
-  danger: '#FF3366',
-  success: '#00FF88',
-  warning: '#FF6B00',
-  purple: '#8B5CF6',
-};
-=======
 const COLORS = { bg: '#0f172a', card: '#1e293b', accent: '#02d7ff', text: '#e8f1ff', sub: '#9ab0c5', green: '#22c55e', yellow: '#f59e0b', red: '#ef4444', orange: '#f97316' };
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
 
 const ROLE_LABELS: Record<string, string> = {
   worker: 'МОНТАЖНИК',
@@ -58,11 +41,7 @@ const getRoleDisplay = (role: string | undefined) => {
 };
 
 export default function DashboardScreen() {
-<<<<<<< HEAD
-  const { user, isWorker, isEngineer, isManagerOrHigher, canCreateTasks, canApproveRequests, logout } = useAuth();
-=======
   const { user, isManager, isManagerOrHigher, isWorker, isEngineer, logout } = useAuth();
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
   const router = useRouter();
   const [stats, setStats] = useState({ projects: 0, tasks: 0, installations: 0, purchaseRequests: 0 });
   const [recentTasks, setRecentTasks] = useState<any[]>([]);
@@ -71,13 +50,6 @@ export default function DashboardScreen() {
 
   const load = async () => {
     try {
-<<<<<<< HEAD
-      const filters = canCreateTasks ? {} : { assignee_id: user?.id };
-      const [projects, tasks, installations] = await Promise.all([
-        projectsApi.getAll().catch(() => []),
-        tasksApi.getAll(filters).catch(() => []),
-        installationsApi.getAll(filters).catch(() => []),
-=======
       // Фильтрация данных в зависимости от роли:
       // - worker и engineer видят только свои задачи
       // - manager, deputy_head, admin видят все задачи и заявки
@@ -88,7 +60,6 @@ export default function DashboardScreen() {
         tasksApi.getAll(isPrivileged ? {} : { assignee_id: user?.id }).catch(() => []),
         installationsApi.getAll(isPrivileged ? {} : { assignee_id: user?.id }).catch(() => []),
         isPrivileged ? purchaseRequestsApi.getAll({ status: 'pending' }).catch(() => []) : Promise.resolve([]),
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
       ]);
       
       const pendingPRs = canApproveRequests ? await purchaseRequestsApi.getAll({ status: 'pending' }).catch(() => []) : [];
@@ -107,15 +78,6 @@ export default function DashboardScreen() {
 
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-<<<<<<< HEAD
-  const statusColor = (s: string) => ({
-    'active': COLORS.success, 
-    'completed': COLORS.accent, 
-    'pending': COLORS.warning, 
-    'in_progress': COLORS.warning,
-    'new': COLORS.accent,
-  }[s] || COLORS.sub);
-=======
   const STATUS_MAP: Record<string, { color: string, label: string }> = {
     'active': { color: COLORS.green, label: 'Активна' },
     'completed': { color: COLORS.accent, label: 'Завершена' },
@@ -125,7 +87,6 @@ export default function DashboardScreen() {
   const getStatus = (s: string) => STATUS_MAP[s] || { color: COLORS.sub, label: s };
 
   const roleDisplay = getRoleDisplay(user?.role);
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
 
   const getRoleBadgeColor = () => {
     if (user?.role === 'admin') return COLORS.danger;
@@ -147,15 +108,8 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Добрый день,</Text>
-<<<<<<< HEAD
-          <Text style={styles.name}>{user?.name || user?.email?.split('@')[0] || 'Пользователь'}</Text>
-          <View style={[styles.roleBadge, { backgroundColor: `${getRoleBadgeColor()}20` }]}>
-            <Text style={[styles.roleText, { color: getRoleBadgeColor() }]}>{ROLE_LABELS[user?.role || 'worker']}</Text>
-          </View>
-=======
           <Text style={styles.name}>{user?.name || user?.email}</Text>
           <Text style={styles.role}>{roleDisplay.icon} {roleDisplay.name}</Text>
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
           <Text style={styles.logoutText}>ВЫХОД</Text>
@@ -165,49 +119,15 @@ export default function DashboardScreen() {
       {/* Statistics */}
       <Text style={styles.sectionTitle}>СТАТИСТИКА</Text>
       <View style={styles.statsGrid}>
-<<<<<<< HEAD
-        <StatCard label="Проекты" value={stats.projects} color={COLORS.accent} onPress={() => router.push('/(app)/projects')} />
-        <StatCard label="Задачи" value={stats.tasks} color={COLORS.success} onPress={() => router.push('/(app)/tasks')} />
-        <StatCard label="Монтажи" value={stats.installations} color={COLORS.warning} onPress={() => router.push('/(app)/installations')} />
-        {canCreateTasks && <StatCard label="АВР" value={0} color={COLORS.danger} onPress={() => router.push('/(app)/avr')} />}
-        {canApproveRequests && stats.purchaseRequests > 0 && (
-          <StatCard label="Заявки ⏳" value={stats.purchaseRequests} color={COLORS.warning} onPress={() => router.push('/(app)/purchase-requests')} />
-        )}
-=======
         <StatCard label="Проекты" value={stats.projects} color={COLORS.accent} />
         <StatCard label="Задачи" value={stats.tasks} color={COLORS.green} />
         <StatCard label="Монтажи" value={stats.installations} color={COLORS.orange} />
         {isManagerOrHigher && <StatCard label="Заявки" value={stats.purchaseRequests} color={COLORS.red} />}
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
       </View>
 
       {/* Quick Navigation */}
       <Text style={styles.sectionTitle}>НАВИГАЦИЯ</Text>
       <View style={styles.navGrid}>
-<<<<<<< HEAD
-        <QuickNavCard icon="📁" label="Проекты" onPress={() => router.push('/(app)/projects')} />
-        <QuickNavCard icon="✅" label="Задачи" onPress={() => router.push('/(app)/tasks')} />
-        <QuickNavCard icon="🔧" label="Монтажи" onPress={() => router.push('/(app)/installations')} />
-        <QuickNavCard icon="💬" label="Чат" onPress={() => router.push('/(app)/chat')} />
-        <QuickNavCard icon="🗺️" label="Площадки" onPress={() => router.push('/(app)/sites')} />
-        <QuickNavCard icon="👥" label="Люди" onPress={() => router.push('/(app)/users')} />
-        
-        {/* Manager-only sections */}
-        {isManagerOrHigher && (
-          <>
-            <QuickNavCard icon="📦" label="Склад" onPress={() => router.push('/(app)/warehouse')} color={COLORS.success} />
-            <QuickNavCard icon="🛒" label="Заявки" onPress={() => router.push('/(app)/purchase-requests')} color={COLORS.warning} />
-          </>
-        )}
-        
-        {/* Engineer+ sections */}
-        {canCreateTasks && (
-          <>
-            <QuickNavCard icon="⚡" label="АВР" onPress={() => router.push('/(app)/avr')} color={COLORS.danger} />
-            <QuickNavCard icon="📦" label="Архив" onPress={() => router.push('/(app)/archive')} />
-          </>
-        )}
-=======
         {[
           ['📋', 'Проекты', '/(app)/projects'],
           ['✅', 'Задачи', '/(app)/tasks'],
@@ -221,7 +141,6 @@ export default function DashboardScreen() {
             <Text style={styles.navLabel}>{label}</Text>
           </TouchableOpacity>
         ))}
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
       </View>
 
       {/* Recent Tasks */}
@@ -229,15 +148,7 @@ export default function DashboardScreen() {
         <>
           <Text style={styles.sectionTitle}>ПОСЛЕДНИЕ ЗАДАЧИ</Text>
           {recentTasks.map(task => (
-<<<<<<< HEAD
-            <TouchableOpacity 
-              key={task.id} 
-              style={styles.taskCard} 
-              onPress={() => router.push({ pathname: '/(app)/task/[id]', params: { id: task.id } })}
-            >
-=======
             <TouchableOpacity key={task.id} style={styles.taskCard} onPress={() => router.push({pathname: '/(app)/task/[id]', params: { id: task.id } } as any)}>
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
               <View style={styles.taskRow}>
                 <Text style={styles.taskTitle} numberOfLines={1}>{task.title}</Text>
                 <View style={[styles.badge, { backgroundColor: getStatus(task.status).color }]}>

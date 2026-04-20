@@ -1,11 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { authApi, usersApi, supabase } from '@/src/lib/supabase';
 
-<<<<<<< HEAD
-// 5 ролей как в веб-приложении
-=======
 // Роли приложения (как в веб-версии)
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
 export type UserRole = 'worker' | 'engineer' | 'manager' | 'deputy_head' | 'admin';
 
 export const ROLES = {
@@ -16,11 +12,7 @@ export const ROLES = {
   ADMIN: 'admin',
 } as const;
 
-<<<<<<< HEAD
-type User = {
-=======
 export type User = {
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
   id: string;
   email: string;
   name: string;
@@ -38,17 +30,6 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<any>;
   register: (email: string, password: string, name: string, role: string) => Promise<any>;
   logout: () => Promise<void>;
-<<<<<<< HEAD
-  // Роли и права как в веб-приложении
-  isWorker: boolean;
-  isEngineer: boolean;
-  isManagerOrHigher: boolean; // manager, deputy_head, admin
-  canCreateTasks: boolean;
-  canDeleteTasks: boolean;
-  canApproveRequests: boolean;
-  canManageUsers: boolean;
-  hasRole: (roles: UserRole[]) => boolean;
-=======
   // Проверки ролей (как в веб-приложении)
   isWorker: boolean;
   isEngineer: boolean;
@@ -62,7 +43,6 @@ type AuthContextValue = {
   canManageUsers: boolean;    // manager, deputy_head, admin
   canApproveRequests: boolean; // manager, deputy_head, admin
   hasRole: (roles: UserRole | UserRole[]) => boolean;
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -129,11 +109,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const register = async (email: string, password: string, name: string, role: string) => {
-<<<<<<< HEAD
-    // Только worker и engineer доступны для регистрации как в веб-приложении
-=======
     // Проверка на запрещённые роли (как в веб-приложении)
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
     if (['manager', 'deputy_head', 'admin'].includes(role)) {
       throw new Error('Регистрация на эту роль невозможна');
     }
@@ -149,20 +125,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setSession(null);
   };
 
-<<<<<<< HEAD
-  // Права как в веб-приложении js/auth.js
-  const hasRole = (roles: UserRole[]) => checkRole(user?.role as UserRole, roles);
-
-  const isWorker = user?.role === ROLES.WORKER;
-  const isEngineer = user?.role === ROLES.ENGINEER;
-  const isManagerOrHigher = hasRole([ROLES.MANAGER, ROLES.DEPUTY_HEAD, ROLES.ADMIN]);
-
-  // Права из веб-приложения
-  const canCreateTasks = hasRole([ROLES.ENGINEER, ROLES.MANAGER, ROLES.DEPUTY_HEAD, ROLES.ADMIN]);
-  const canDeleteTasks = hasRole([ROLES.MANAGER, ROLES.DEPUTY_HEAD, ROLES.ADMIN]);
-  const canApproveRequests = hasRole([ROLES.MANAGER, ROLES.DEPUTY_HEAD, ROLES.ADMIN]);
-  const canManageUsers = hasRole([ROLES.MANAGER, ROLES.DEPUTY_HEAD, ROLES.ADMIN]);
-=======
   // Проверка роли
   const hasRole = (roles: UserRole | UserRole[]): boolean => {
     if (!user) return false;
@@ -178,7 +140,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const canDeleteTasks = hasRole([ROLES.MANAGER, ROLES.DEPUTY_HEAD, ROLES.ADMIN]);
   const canManageUsers = hasRole([ROLES.MANAGER, ROLES.DEPUTY_HEAD, ROLES.ADMIN]);
   const canApproveRequests = hasRole([ROLES.MANAGER, ROLES.DEPUTY_HEAD, ROLES.ADMIN]);
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
 
   return (
     <AuthContext.Provider value={{
@@ -186,15 +147,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signIn: async (email, password) => { await login(email, password); },
       signOut: logout,
       login, register, logout,
-<<<<<<< HEAD
-      isWorker,
-      isEngineer,
-      isManagerOrHigher,
-      canCreateTasks,
-      canDeleteTasks,
-      canApproveRequests,
-      canManageUsers,
-=======
       isWorker: hasRole(ROLES.WORKER),
       isEngineer: hasRole(ROLES.ENGINEER),
       isManager: hasRole(ROLES.MANAGER),
@@ -205,7 +157,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       canDeleteTasks,
       canManageUsers,
       canApproveRequests,
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
       hasRole,
     }}>
       {children}

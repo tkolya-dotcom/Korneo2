@@ -3,24 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView,
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/src/providers/AuthProvider';
 
-<<<<<<< HEAD
-// Cyberpunk theme - cyan as in web app
-const C = { bg: '#0A0A0F', card: '#1A1A2E', accent: '#00D9FF', text: '#E0E0E0', sub: '#8892a0', border: 'rgba(0, 217, 255, 0.15)', danger: '#FF3366', green: '#00FF88' };
-
-// Маппинг ошибок как в веб-приложении
-const mapAuthError = (message: string) => {
-  const errorMessages: Record<string, string> = {
-    'Invalid login credentials': 'Неверный email или пароль',
-    'Email not confirmed': 'Email не подтверждён',
-    'User already registered': 'Пользователь уже существует',
-    'Weak password': 'Слишком слабый пароль (мин. 6 символов)',
-    'Over request rate limit': 'Слишком много запросов, попробуйте позже',
-  };
-  return errorMessages[message] || message;
-};
-=======
 const COLORS = { bg: '#0f172a', card: '#1e293b', accent: '#02d7ff', text: '#e8f1ff', sub: '#9ab0c5', border: '#1e2a35', red: '#ef4444' };
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
 
 export default function AuthScreen() {
   const { signIn, register } = useAuth();
