@@ -47,12 +47,22 @@ jobs:
         working-directory: apps/mobile/ios
         run: pod install
 
-      - name: Build iOS IPA (unsigned)
-        working-directory: apps/mobile
+      - name: Detect workspace and scheme
+        id: detect
+        working-directory: apps/mobile/ios
+        run: |
+          WORKSPACE=$(find . -name "*.xcworkspace" -maxdepth 1 | head -1 | xargs basename)
+          SCHEME=$(echo "$WORKSPACE" | sed 's/.xcworkspace//')
+          echo "workspace=$WORKSPACE" >> $GITHUB_OUTPUT
+          echo "scheme=$SCHEME" >> $GITHUB_OUTPUT
+          echo "Workspace: $WORKSPACE | Scheme: $SCHEME"
+
+      - name: Build iOS Archive (unsigned)
+        working-directory: apps/mobile/ios
         run: |
           xcodebuild \
-            -workspace ios/Korneo.xcworkspace \
-            -scheme Korneo \
+            -workspace "${{ steps.detect.outputs.workspace }}" \
+            -scheme "${{ steps.detect.outputs.scheme }}" \
             -configuration Release \
             -sdk iphoneos \
             -archivePath $RUNNER_TEMP/Korneo.xcarchive \
@@ -61,19 +71,28 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             DEVELOPMENT_TEAM="" \
-            | xcpretty
+            | xcpretty --color
 
-      - name: Export IPA (unsigned)
+      - name: Package IPA from archive
         run: |
-          mkdir -p $RUNNER_TEMP/ipa
-          cd $RUNNER_TEMP/Korneo.xcarchive/Products/Applications
-          mkdir -p Payload
-          cp -r Korneo.app Payload/
-          zip -r $RUNNER_TEMP/ipa/Korneo-unsigned.ipa Payload
+          ARCHIVE="$RUNNER_TEMP/Korneo.xcarchive"
+          IPA_DIR="$RUNNER_TEMP/ipa"
+          mkdir -p "$IPA_DIR/Payload"
+          APP_PATH=$(find "$ARCHIVE/Products/Applications" -name "*.app" | head -1)
+          if [ -z "$APP_PATH" ]; then
+            echo "ERROR: No .app found in archive!"
+            find "$ARCHIVE" -type d | head -20
+            exit 1
+          fi
+          echo "Found .app: $APP_PATH"
+          cp -r "$APP_PATH" "$IPA_DIR/Payload/"
+          cd "$IPA_DIR"
+          zip -r Korneo-unsigned.ipa Payload
+          ls -lh Korneo-unsigned.ipa
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
-        if: success()
+        if: always()
         with:
           name: korneo-ios-ipa
           path: ${{ runner.temp }}/ipa/Korneo-unsigned.ipa
@@ -87,14 +106,8 @@ jobs:
           name: Korneo iOS IPA v${{ github.run_number }}
           files: ${{ runner.temp }}/ipa/Korneo-unsigned.ipa
           body: |
-            ## Korneo iOS (Unsigned IPA)
-            
-            Unsigned IPA для установки через AltStore, Sideloadly или ESign.
-            
-            ### Установка:
-            - **AltStore**: перетащите IPA в AltStore
-            - **Sideloadly**: используйте Apple ID для подписи и установки
-            - **ESign** (с сертификатом): установите напрямую
+            ## Korneo iOS (Unsigned IPA) v${{ github.run_number }}
+            Unsigned IPA — для установки через AltStore / Sideloadly / ESign.
           generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
