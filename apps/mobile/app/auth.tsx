@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView,
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/src/providers/AuthProvider';
 
+<<<<<<< HEAD
 // Cyberpunk theme - cyan as in web app
 const C = { bg: '#0A0A0F', card: '#1A1A2E', accent: '#00D9FF', text: '#E0E0E0', sub: '#8892a0', border: 'rgba(0, 217, 255, 0.15)', danger: '#FF3366', green: '#00FF88' };
 
@@ -17,6 +18,9 @@ const mapAuthError = (message: string) => {
   };
   return errorMessages[message] || message;
 };
+=======
+const COLORS = { bg: '#0f172a', card: '#1e293b', accent: '#02d7ff', text: '#e8f1ff', sub: '#9ab0c5', border: '#1e2a35', red: '#ef4444' };
+>>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
 
 export default function AuthScreen() {
   const { signIn, register } = useAuth();
@@ -89,7 +93,14 @@ export default function AuthScreen() {
               <TouchableOpacity style={[styles.roleBtn, role === 'worker' && styles.activeRole]} onPress={() => setRole('worker')}>
                 <Text style={[styles.roleBtnText, role === 'worker' && styles.activeRoleTxt]}>Монтажник</Text>
               </TouchableOpacity>
+<<<<<<< HEAD
               <TouchableOpacity style={[styles.roleBtn, role === 'engineer' && styles.activeRole]} onPress={() => setRole('engineer')}>
+=======
+              <TouchableOpacity
+                style={[styles.roleBtn, role === 'engineer' && styles.activeRole]}
+                onPress={() => setRole('engineer')}
+              >
+>>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
                 <Text style={[styles.roleBtnText, role === 'engineer' && styles.activeRoleTxt]}>Инженер</Text>
               </TouchableOpacity>
             </View>

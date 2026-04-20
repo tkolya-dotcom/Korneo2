@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/src/providers/AuthProvider';
+import { useAuth, ROLES } from '@/src/providers/AuthProvider';
 import { projectsApi, tasksApi, installationsApi, purchaseRequestsApi } from '@/src/lib/supabase';
 
+<<<<<<< HEAD
 // Cyberpunk тема - как в веб-приложении (cyan)
 const COLORS = {
   bg: '#0A0A0F',
@@ -18,6 +19,9 @@ const COLORS = {
   warning: '#FF6B00',
   purple: '#8B5CF6',
 };
+=======
+const COLORS = { bg: '#0f172a', card: '#1e293b', accent: '#02d7ff', text: '#e8f1ff', sub: '#9ab0c5', green: '#22c55e', yellow: '#f59e0b', red: '#ef4444', orange: '#f97316' };
+>>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
 
 const ROLE_LABELS: Record<string, string> = {
   worker: 'МОНТАЖНИК',
@@ -41,8 +45,24 @@ const QuickNavCard = ({ icon, label, onPress, color = COLORS.accent }: { icon: s
   </TouchableOpacity>
 );
 
+// Функция для получения иконки и названия роли
+const getRoleDisplay = (role: string | undefined) => {
+  switch (role) {
+    case ROLES.MANAGER: return { icon: '👔', name: 'Менеджер' };
+    case ROLES.DEPUTY_HEAD: return { icon: '👨‍💼', name: 'Зам. начальника' };
+    case ROLES.ADMIN: return { icon: '🔐', name: 'Администратор' };
+    case ROLES.ENGINEER: return { icon: '📐', name: 'Инженер' };
+    case ROLES.WORKER: return { icon: '🔧', name: 'Монтажник' };
+    default: return { icon: '👤', name: 'Пользователь' };
+  }
+};
+
 export default function DashboardScreen() {
+<<<<<<< HEAD
   const { user, isWorker, isEngineer, isManagerOrHigher, canCreateTasks, canApproveRequests, logout } = useAuth();
+=======
+  const { user, isManager, isManagerOrHigher, isWorker, isEngineer, logout } = useAuth();
+>>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
   const router = useRouter();
   const [stats, setStats] = useState({ projects: 0, tasks: 0, installations: 0, purchaseRequests: 0 });
   const [recentTasks, setRecentTasks] = useState<any[]>([]);
@@ -51,11 +71,24 @@ export default function DashboardScreen() {
 
   const load = async () => {
     try {
+<<<<<<< HEAD
       const filters = canCreateTasks ? {} : { assignee_id: user?.id };
       const [projects, tasks, installations] = await Promise.all([
         projectsApi.getAll().catch(() => []),
         tasksApi.getAll(filters).catch(() => []),
         installationsApi.getAll(filters).catch(() => []),
+=======
+      // Фильтрация данных в зависимости от роли:
+      // - worker и engineer видят только свои задачи
+      // - manager, deputy_head, admin видят все задачи и заявки
+      const isPrivileged = isManagerOrHigher;
+      
+      const [projects, tasks, installations, prs] = await Promise.all([
+        projectsApi.getAll('active').catch(() => []),
+        tasksApi.getAll(isPrivileged ? {} : { assignee_id: user?.id }).catch(() => []),
+        installationsApi.getAll(isPrivileged ? {} : { assignee_id: user?.id }).catch(() => []),
+        isPrivileged ? purchaseRequestsApi.getAll({ status: 'pending' }).catch(() => []) : Promise.resolve([]),
+>>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
       ]);
       
       const pendingPRs = canApproveRequests ? await purchaseRequestsApi.getAll({ status: 'pending' }).catch(() => []) : [];
@@ -74,6 +107,7 @@ export default function DashboardScreen() {
 
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
+<<<<<<< HEAD
   const statusColor = (s: string) => ({
     'active': COLORS.success, 
     'completed': COLORS.accent, 
@@ -81,6 +115,17 @@ export default function DashboardScreen() {
     'in_progress': COLORS.warning,
     'new': COLORS.accent,
   }[s] || COLORS.sub);
+=======
+  const STATUS_MAP: Record<string, { color: string, label: string }> = {
+    'active': { color: COLORS.green, label: 'Активна' },
+    'completed': { color: COLORS.accent, label: 'Завершена' },
+    'pending': { color: COLORS.yellow, label: 'В ожидании' },
+    'in_progress': { color: COLORS.orange, label: 'В работе' }
+  };
+  const getStatus = (s: string) => STATUS_MAP[s] || { color: COLORS.sub, label: s };
+
+  const roleDisplay = getRoleDisplay(user?.role);
+>>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
 
   const getRoleBadgeColor = () => {
     if (user?.role === 'admin') return COLORS.danger;
@@ -102,10 +147,15 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Добрый день,</Text>
+<<<<<<< HEAD
           <Text style={styles.name}>{user?.name || user?.email?.split('@')[0] || 'Пользователь'}</Text>
           <View style={[styles.roleBadge, { backgroundColor: `${getRoleBadgeColor()}20` }]}>
             <Text style={[styles.roleText, { color: getRoleBadgeColor() }]}>{ROLE_LABELS[user?.role || 'worker']}</Text>
           </View>
+=======
+          <Text style={styles.name}>{user?.name || user?.email}</Text>
+          <Text style={styles.role}>{roleDisplay.icon} {roleDisplay.name}</Text>
+>>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
           <Text style={styles.logoutText}>ВЫХОД</Text>
@@ -115,6 +165,7 @@ export default function DashboardScreen() {
       {/* Statistics */}
       <Text style={styles.sectionTitle}>СТАТИСТИКА</Text>
       <View style={styles.statsGrid}>
+<<<<<<< HEAD
         <StatCard label="Проекты" value={stats.projects} color={COLORS.accent} onPress={() => router.push('/(app)/projects')} />
         <StatCard label="Задачи" value={stats.tasks} color={COLORS.success} onPress={() => router.push('/(app)/tasks')} />
         <StatCard label="Монтажи" value={stats.installations} color={COLORS.warning} onPress={() => router.push('/(app)/installations')} />
@@ -122,11 +173,18 @@ export default function DashboardScreen() {
         {canApproveRequests && stats.purchaseRequests > 0 && (
           <StatCard label="Заявки ⏳" value={stats.purchaseRequests} color={COLORS.warning} onPress={() => router.push('/(app)/purchase-requests')} />
         )}
+=======
+        <StatCard label="Проекты" value={stats.projects} color={COLORS.accent} />
+        <StatCard label="Задачи" value={stats.tasks} color={COLORS.green} />
+        <StatCard label="Монтажи" value={stats.installations} color={COLORS.orange} />
+        {isManagerOrHigher && <StatCard label="Заявки" value={stats.purchaseRequests} color={COLORS.red} />}
+>>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
       </View>
 
       {/* Quick Navigation */}
       <Text style={styles.sectionTitle}>НАВИГАЦИЯ</Text>
       <View style={styles.navGrid}>
+<<<<<<< HEAD
         <QuickNavCard icon="📁" label="Проекты" onPress={() => router.push('/(app)/projects')} />
         <QuickNavCard icon="✅" label="Задачи" onPress={() => router.push('/(app)/tasks')} />
         <QuickNavCard icon="🔧" label="Монтажи" onPress={() => router.push('/(app)/installations')} />
@@ -149,6 +207,21 @@ export default function DashboardScreen() {
             <QuickNavCard icon="📦" label="Архив" onPress={() => router.push('/(app)/archive')} />
           </>
         )}
+=======
+        {[
+          ['📋', 'Проекты', '/(app)/projects'],
+          ['✅', 'Задачи', '/(app)/tasks'],
+          ['🔧', 'Монтажи', '/(app)/installations'],
+          // Заявки видят только manager и выше
+          ...(isManagerOrHigher ? [['🛒', 'Заявки', '/(app)/purchase-requests']] : []),
+          ['📦', 'Архив', '/(app)/archive']
+        ].map(([icon, label, path]) => (
+          <TouchableOpacity key={path} style={styles.navCard} onPress={() => router.push(path as any)}>
+            <Text style={styles.navIcon}>{icon}</Text>
+            <Text style={styles.navLabel}>{label}</Text>
+          </TouchableOpacity>
+        ))}
+>>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
       </View>
 
       {/* Recent Tasks */}
@@ -156,15 +229,19 @@ export default function DashboardScreen() {
         <>
           <Text style={styles.sectionTitle}>ПОСЛЕДНИЕ ЗАДАЧИ</Text>
           {recentTasks.map(task => (
+<<<<<<< HEAD
             <TouchableOpacity 
               key={task.id} 
               style={styles.taskCard} 
               onPress={() => router.push({ pathname: '/(app)/task/[id]', params: { id: task.id } })}
             >
+=======
+            <TouchableOpacity key={task.id} style={styles.taskCard} onPress={() => router.push({pathname: '/(app)/task/[id]', params: { id: task.id } } as any)}>
+>>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
               <View style={styles.taskRow}>
                 <Text style={styles.taskTitle} numberOfLines={1}>{task.title}</Text>
-                <View style={[styles.badge, { backgroundColor: statusColor(task.status) }]}>
-                  <Text style={styles.badgeText}>{task.status}</Text>
+                <View style={[styles.badge, { backgroundColor: getStatus(task.status).color }]}>
+                  <Text style={styles.badgeText}>{getStatus(task.status).label}</Text>
                 </View>
               </View>
               <Text style={styles.taskSub} numberOfLines={1}>{task.project?.name || '—'}</Text>
@@ -210,8 +287,13 @@ const styles = StyleSheet.create({
   taskTitle: { color: COLORS.text, fontSize: 14, fontWeight: '600', flex: 1, marginRight: 8 },
   taskSub: { color: COLORS.sub, fontSize: 12, marginTop: 4 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+<<<<<<< HEAD
   badgeText: { color: '#0A0A0F', fontSize: 10, fontWeight: '600' },
   debugInfo: { backgroundColor: COLORS.card, margin: 16, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
   debugTitle: { color: COLORS.accent, fontSize: 12, fontWeight: '600', marginBottom: 8 },
   debugText: { color: COLORS.sub, fontSize: 11, marginBottom: 4 },
 });
+=======
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '600' },
+});
+>>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { tasksApi } from '@/src/lib/supabase';
 
+<<<<<<< HEAD
 // Cyberpunk theme - cyan colors as in web app
 const C = { bg: '#0A0A0F', card: '#1A1A2E', accent: '#00D9FF', text: '#E0E0E0', sub: '#8892a0', border: 'rgba(0, 217, 255, 0.15)', green: '#00FF88', orange: '#FFA500', purple: '#8B5CF6' };
 
@@ -32,6 +33,14 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 export default function TasksScreen() {
   const { user, canCreateTasks } = useAuth();
+=======
+const C = { bg: '#0f172a', card: '#1e293b', accent: '#02d7ff', text: '#e8f1ff', sub: '#9ab0c5', border: '#1e2a35', green: '#22c55e', yellow: '#f59e0b', orange: '#f97316' };
+const statusColor = (s: string) => ({ active: C.green, pending: C.yellow, in_progress: C.orange, completed: C.accent, cancelled: C.sub }[s] || C.sub);
+const statusLabel = (s: string) => ({ active: 'Активна', pending: 'Ожидает', in_progress: 'В работе', completed: 'Готова', cancelled: 'Отменена' }[s] || s);
+
+export default function TasksScreen() {
+  const { user, isManagerOrHigher } = useAuth();
+>>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
   const router = useRouter();
   const [tasks, setTasks] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
@@ -41,9 +50,13 @@ export default function TasksScreen() {
 
   const load = async () => {
     try {
+<<<<<<< HEAD
       // Менеджеры видят все задачи, работники - только свои
       const filters = canCreateTasks ? {} : { assignee_id: user?.id };
       const data = await tasksApi.getAll(filters);
+=======
+      const data = await tasksApi.getAll(isManagerOrHigher ? {} : { assignee_id: user?.id });
+>>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
       setTasks(data || []);
       setFiltered(data || []);
     } catch (e) { console.error(e); }
