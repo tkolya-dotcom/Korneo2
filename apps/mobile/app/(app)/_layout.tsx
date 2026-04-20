@@ -43,7 +43,7 @@ export default function AppTabsLayout() {
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🏠</Text>,
         }}
       />
-      
+
       {/* Проекты */}
       <Tabs.Screen
         name="projects"
@@ -53,27 +53,27 @@ export default function AppTabsLayout() {
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>📁</Text>,
         }}
       />
-      
+
       {/* Задачи */}
       <Tabs.Screen
-        name="tasks"
+        name="task"
         options={{
           title: 'Задачи',
           tabBarLabel: 'Задачи',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>✅</Text>,
         }}
       />
-      
+
       {/* Монтажи */}
       <Tabs.Screen
-        name="installations"
+        name="installation"
         options={{
           title: 'Монтажи',
           tabBarLabel: 'Монтажи',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🔧</Text>,
         }}
       />
-      
+
       {/* АВР - только для инженеров и менеджеров */}
       {canCreateTasks && (
         <Tabs.Screen
@@ -85,7 +85,7 @@ export default function AppTabsLayout() {
           }}
         />
       )}
-      
+
       {/* Чат - основной функционал */}
       <Tabs.Screen
         name="chat"
@@ -95,7 +95,7 @@ export default function AppTabsLayout() {
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>💬</Text>,
         }}
       />
-      
+
       {/* Склад - только для менеджеров */}
       {isManagerOrHigher && (
         <Tabs.Screen
@@ -107,68 +107,42 @@ export default function AppTabsLayout() {
           }}
         />
       )}
-      
+
       {/* Заявки */}
       <Tabs.Screen
         name="users"
         options={{
-<<<<<<< HEAD
-          title: 'Заявки',
-          tabBarLabel: 'Заявки',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🛒</Text>,
-=======
           title: 'Люди',
           tabBarLabel: 'Люди',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>👥</Text>,
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>👥</Text>,
         }}
       />
-      
+
       {/* Площадки */}
       <Tabs.Screen
         name="sites"
         options={{
           title: 'Площадки',
-          tabBarLabel: 'Карта',
+          tabBarLabel: 'Площадки',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🗺️</Text>,
         }}
       />
-      
+
       {/* Профиль */}
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Профиль',
-tabBarLabel: 'Профиль',
+          tabBarLabel: 'Профиль',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>👤</Text>,
         }}
       />
-<<<<<<< HEAD
 
       {/* === Скрытые экраны === */}
-      <Tabs.Screen name="archive" options={{ href: null }} />
-=======
-      {/* Hidden screens (no tab bar) */}
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
-      <Tabs.Screen name="project/[id]" options={{ href: null }} />
-      <Tabs.Screen name="project/create" options={{ href: null }} />
-      <Tabs.Screen name="task/[id]" options={{ href: null }} />
-      <Tabs.Screen name="task/create" options={{ href: null }} />
-      <Tabs.Screen name="task/[id]/comments" options={{ href: null }} />
-      <Tabs.Screen name="installation/[id]" options={{ href: null }} />
-<<<<<<< HEAD
-      <Tabs.Screen name="task/create" options={{ href: null }} />
-      <Tabs.Screen name="installation/create" options={{ href: null }} />
-      <Tabs.Screen name="task/[id]/comments" options={{ href: null }} />
-      <Tabs.Screen name="installation/[id]/comments" options={{ href: null }} />
-      <Tabs.Screen name="chat/[id]" options={{ href: null }} />
-      <Tabs.Screen name="users" options={{ href: null }} />
-      <Tabs.Screen name="warehouse/issue" options={{ href: null }} />
-=======
-      <Tabs.Screen name="installation/create" options={{ href: null }} />
-      <Tabs.Screen name="installation/[id]/comments" options={{ href: null }} />
-      <Tabs.Screen name="purchase-requests" options={{ href: null }} />
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
+      <Tabs.Screen
+        name="project"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }
