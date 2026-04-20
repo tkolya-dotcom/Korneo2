@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useAuth } from '@/src/providers/AuthProvider';
+import { COLORS as THEME_COLORS } from '@/src/theme/colors';
 
-const COLORS = { bg: '#0f172a', card: '#1e293b', accent: '#6366f1', text: '#f1f5f9', sub: '#94a3b8', border: '#334155', red: '#ef4444' };
+const COLORS = { bg: '#0f172a', card: '#1e293b', accent: '#02d7ff', text: '#e8f1ff', sub: '#9ab0c5', border: '#1e2a35', red: '#ef4444' };
 
 export default function AuthScreen() {
   const { signIn, register } = useAuth();
@@ -10,7 +11,7 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'manager' | 'worker'>('worker');
+  const [role, setRole] = useState<'manager' | 'worker' | 'engineer'>('worker');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -94,6 +95,12 @@ export default function AuthScreen() {
                 onPress={() => setRole('worker')}
               >
                 <Text style={[styles.roleBtnText, role === 'worker' && styles.activeRoleTxt]}>Монтажник</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.roleBtn, role === 'engineer' && styles.activeRole]}
+                onPress={() => setRole('engineer')}
+              >
+                <Text style={[styles.roleBtnText, role === 'engineer' && styles.activeRoleTxt]}>Инженер</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.roleBtn, role === 'manager' && styles.activeRole]}

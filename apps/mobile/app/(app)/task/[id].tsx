@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { tasksApi } from '@/src/lib/supabase';
 
-const C = { bg: '#0f172a', card: '#1e293b', accent: '#6366f1', text: '#f1f5f9', sub: '#94a3b8', border: '#334155', green: '#22c55e', yellow: '#f59e0b', orange: '#f97316', red: '#ef4444' };
+const C = { bg: '#0f172a', card: '#1e293b', accent: '#02d7ff', text: '#e8f1ff', sub: '#9ab0c5', border: '#1e2a35', green: '#22c55e', yellow: '#f59e0b', orange: '#f97316', red: '#ef4444' };
 const STATUS_OPTIONS = ['pending', 'in_progress', 'completed', 'cancelled'];
 const statusLabel = (s: string) => ({ pending: 'Ожидает', in_progress: 'В работе', completed: 'Готова', cancelled: 'Отменена', active: 'Активна' }[s] || s);
 const statusColor = (s: string) => ({ pending: C.yellow, in_progress: C.orange, completed: C.green, cancelled: C.sub, active: C.green }[s] || C.sub);

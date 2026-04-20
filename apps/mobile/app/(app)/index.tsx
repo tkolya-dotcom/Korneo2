@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { projectsApi, tasksApi, installationsApi, purchaseRequestsApi } from '@/src/lib/supabase';
 
-const COLORS = { bg: '#0f172a', card: '#1e293b', accent: '#6366f1', text: '#f1f5f9', sub: '#94a3b8', green: '#22c55e', yellow: '#f59e0b', red: '#ef4444', orange: '#f97316' };
+const COLORS = { bg: '#0f172a', card: '#1e293b', accent: '#02d7ff', text: '#e8f1ff', sub: '#9ab0c5', green: '#22c55e', yellow: '#f59e0b', red: '#ef4444', orange: '#f97316' };
 
 const StatCard = ({ label, value, color }: { label: string; value: number; color: string }) => (
   <View style={[styles.statCard, { borderLeftColor: color }]}>
@@ -38,7 +38,13 @@ export default function DashboardScreen() {
 
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  const statusColor = (s: string) => ({ 'active': COLORS.green, 'completed': COLORS.accent, 'pending': COLORS.yellow, 'in_progress': COLORS.orange }[s] || COLORS.sub);
+  const STATUS_MAP: Record<string, { color: string, label: string }> = {
+    'active': { color: COLORS.green, label: 'Активна' },
+    'completed': { color: COLORS.accent, label: 'Завершена' },
+    'pending': { color: COLORS.yellow, label: 'В ожидании' },
+    'in_progress': { color: COLORS.orange, label: 'В работе' }
+  };
+  const getStatus = (s: string) => STATUS_MAP[s] || { color: COLORS.sub, label: s };
 
   if (loading) return <View style={styles.center}><ActivityIndicator color={COLORS.accent} size="large" /></View>;
 
@@ -48,7 +54,7 @@ export default function DashboardScreen() {
         <View>
           <Text style={styles.greeting}>Добрый день,</Text>
           <Text style={styles.name}>{user?.name || user?.email}</Text>
-          <Text style={styles.role}>{isManager ? '👔 Менеджер' : '🔧 Монтажник'}</Text>
+          <Text style={styles.role}>{user?.role === 'manager' ? '👔 Менеджер' : user?.role === 'engineer' ? '📐 Инженер' : '🔧 Монтажник'}</Text>
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
           <Text style={styles.logoutText}>Выйти</Text>
@@ -84,8 +90,8 @@ export default function DashboardScreen() {
             <TouchableOpacity key={task.id} style={styles.taskCard} onPress={() => router.push({ pathname: '/(app)/task/[id]', params: { id: task.id } } as any)}>
               <View style={styles.taskRow}>
                 <Text style={styles.taskTitle} numberOfLines={1}>{task.title}</Text>
-                <View style={[styles.badge, { backgroundColor: statusColor(task.status) }]}>
-                  <Text style={styles.badgeText}>{task.status}</Text>
+                <View style={[styles.badge, { backgroundColor: getStatus(task.status).color }]}>
+                  <Text style={styles.badgeText}>{getStatus(task.status).label}</Text>
                 </View>
               </View>
               <Text style={styles.taskSub} numberOfLines={1}>{task.project?.name || '—'}</Text>
