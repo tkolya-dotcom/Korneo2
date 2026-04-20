@@ -198,13 +198,5 @@ const styles = StyleSheet.create({
   taskTitle: { color: COLORS.text, fontSize: 14, fontWeight: '600', flex: 1, marginRight: 8 },
   taskSub: { color: COLORS.sub, fontSize: 12, marginTop: 4 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-<<<<<<< HEAD
-  badgeText: { color: '#0A0A0F', fontSize: 10, fontWeight: '600' },
-  debugInfo: { backgroundColor: COLORS.card, margin: 16, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
-  debugTitle: { color: COLORS.accent, fontSize: 12, fontWeight: '600', marginBottom: 8 },
-  debugText: { color: COLORS.sub, fontSize: 11, marginBottom: 4 },
-});
-=======
   badgeText: { color: '#fff', fontSize: 10, fontWeight: '600' },
 });
->>>>>>> dd3744c539c31c2d34149066cd6bfad4332e3c60
