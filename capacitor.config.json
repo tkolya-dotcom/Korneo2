@@ -1,7 +1,7 @@
 {
   "appId": "com.korneo.app",
   "appName": "Корнео",
-  "webDir": ".",
+      "webDir": "www",
   "server": {
     "url": "https://tkolya-dotcom.github.io/Korneo/",
     "cleartext": false,
