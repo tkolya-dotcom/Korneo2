@@ -1,0 +1,795 @@
+2026-04-21 00:16:16.636   783-847   TouchUtility            ven...hardware.mtkpower@1.0-service  I  notifyAppState error = NULL
+2026-04-21 00:16:17.062   783-847   TouchUtility            ven...hardware.mtkpower@1.0-service  I  notifyAppState error = NULL
+2026-04-21 00:16:18.188  1231-1281  ReactNativeJS           com.tkolya.korneo                    E  [ReferenceError: Property 'canApproveRequests' doesn't exist]
+2026-04-21 00:16:18.194  1231-1282  unknown:ReactNative     com.tkolya.korneo                    E  ReferenceError: Property 'canApproveRequests' doesn't exist, js engine: hermes, stack:
+                                                                                                    ?anon_0_@1:1141349
+                                                                                                    asyncGeneratorStep@1:519014
+                                                                                                    _next@1:519271
+                                                                                                    anonymous@1:82073
+                                                                                                    _callTimer@1:81072
+                                                                                                    _callReactNativeMicrotasksPass@1:81216
+                                                                                                    callReactNativeMicrotasks@1:83144
+                                                                                                    __callReactNativeMicrotasks@1:46882
+                                                                                                    anonymous@1:46018
+                                                                                                    __guard@1:46756
+                                                                                                    flushedQueue@1:45929
+                                                                                                    invokeCallbackAndReturnFlushedQueue@1:45872
+2026-04-21 00:16:18.194  1231-1281  ReactNativeJS           com.tkolya.korneo                    E  ReferenceError: Property 'canCreateTasks' doesn't exist
+                                                                                                    
+                                                                                                    This error is located at:
+                                                                                                        in DashboardScreen
+                                                                                                        in Unknown
+                                                                                                        in Suspense
+                                                                                                        in Route
+                                                                                                        in Unknown
+                                                                                                        in StaticContainer
+                                                                                                        in EnsureSingleNavigator
+                                                                                                        in SceneView
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in Background
+                                                                                                        in Screen
+                                                                                                        in RNSScreen
+                                                                                                        in Unknown
+                                                                                                        in Suspender
+                                                                                                        in Suspense
+                                                                                                        in Freeze
+                                                                                                        in DelayedFreeze
+                                                                                                        in InnerScreen
+                                                                                                        in Screen
+                                                                                                        in MaybeScreen
+                                                                                                        in RNSScreenContainer
+                                                                                                        in ScreenContainer
+                                                                                                        in MaybeScreenContainer
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in SafeAreaProviderCompat
+                                                                                                        in BottomTabView
+                                                                                                        in PreventRemoveProvider
+                                                                                                        in NavigationContent
+                                                                                                        in Unknown
+                                                                                                        in BottomTabNavigator
+                                                                                                        in Unknown
+                                                                                                        in AppTabsLayout
+                                                                                                        in Unknown
+                                                                                                        in Suspense
+                                                                                                        in Route
+                                                                                                        in Unknown
+                                                                                                        in StaticContainer
+                                                                                                        in EnsureSingleNavigator
+                                                                                                        in SceneView
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in DebugContainer
+                                                                                                        in MaybeNestedStack
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in RNSScreen
+                                                                                                        in Unknown
+                                                                                                        in Suspender
+                                                                                                        in Suspense
+                                                                                                        in Freeze
+                                                                                                        in DelayedFreeze
+                                                                                                        in InnerScreen
+                                                                                                        in Screen
+                                                                                                        in SceneView
+                                                                                                        in Suspender
+                                                                                                        in Suspense
+                                                                                                        in Freeze
+                                                                                                        in DelayedFreeze
+                                                                                                        in RNSScreenStack
+                                                                                                        in ScreenStack
+                                                                                                        in NativeStackViewInner
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in SafeAreaProviderCompat
+                                                                                                        in NativeStackView
+                                                                                                        in PreventRemoveProvider
+                                                                                                        in NavigationContent
+                                                                                                        in Unknown
+                                                                                                        in NativeStackNavigator
+                                                                                                        in Unknown
+                                                                                                        in RootNavigator
+                                                                                                        in AuthProvider
+                                                                                                        in RootLayout
+                                                                                                        in Unknown
+                                                                                                        in Suspense
+                                                                                                        in Route
+                                                                                                        in Unknown
+                                                                                                        in RNCSafeAreaProvider
+                                                                                                        in SafeAreaProvider
+                                                                                                        in wrapper
+                                                                                                        in EnsureSingleNavigator
+                                                                                                        in BaseNavigationContainer
+                                                                                                        in ThemeProvider
+                                                                                                        in NavigationContainerInner
+                                                                                                        in ContextNavigator
+                                                                                                        in ExpoRoot
+                                                                                                        in App
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in AppContainer, js engine: hermes
+2026-04-21 00:16:18.198  1231-1282  unknown:ReactNative     com.tkolya.korneo                    E  ReferenceError: Property 'canCreateTasks' doesn't exist
+                                                                                                    
+                                                                                                    This error is located at:
+                                                                                                        in DashboardScreen
+                                                                                                        in Unknown
+                                                                                                        in Suspense
+                                                                                                        in Route
+                                                                                                        in Unknown
+                                                                                                        in StaticContainer
+                                                                                                        in EnsureSingleNavigator
+                                                                                                        in SceneView
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in Background
+                                                                                                        in Screen
+                                                                                                        in RNSScreen
+                                                                                                        in Unknown
+                                                                                                        in Suspender
+                                                                                                        in Suspense
+                                                                                                        in Freeze
+                                                                                                        in DelayedFreeze
+                                                                                                        in InnerScreen
+                                                                                                        in Screen
+                                                                                                        in MaybeScreen
+                                                                                                        in RNSScreenContainer
+                                                                                                        in ScreenContainer
+                                                                                                        in MaybeScreenContainer
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in SafeAreaProviderCompat
+                                                                                                        in BottomTabView
+                                                                                                        in PreventRemoveProvider
+                                                                                                        in NavigationContent
+                                                                                                        in Unknown
+                                                                                                        in BottomTabNavigator
+                                                                                                        in Unknown
+                                                                                                        in AppTabsLayout
+                                                                                                        in Unknown
+                                                                                                        in Suspense
+                                                                                                        in Route
+                                                                                                        in Unknown
+                                                                                                        in StaticContainer
+                                                                                                        in EnsureSingleNavigator
+                                                                                                        in SceneView
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in DebugContainer
+                                                                                                        in MaybeNestedStack
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in RNSScreen
+                                                                                                        in Unknown
+                                                                                                        in Suspender
+                                                                                                        in Suspense
+                                                                                                        in Freeze
+                                                                                                        in DelayedFreeze
+                                                                                                        in InnerScreen
+                                                                                                        in Screen
+                                                                                                        in SceneView
+                                                                                                        in Suspender
+                                                                                                        in Suspense
+                                                                                                        in Freeze
+                                                                                                        in DelayedFreeze
+                                                                                                        in RNSScreenStack
+                                                                                                        in ScreenStack
+                                                                                                        in NativeStackViewInner
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in SafeAreaProviderCompat
+                                                                                                        in NativeStackView
+                                                                                                        in PreventRemoveProvider
+                                                                                                        in NavigationContent
+                                                                                                        in Unknown
+                                                                                                        in NativeStackNavigator
+                                                                                                        in Unknown
+                                                                                                        in RootNavigator
+                                                                                                        in AuthProvider
+                                                                                                        in RootLayout
+                                                                                                        in Unknown
+                                                                                                        in Suspense
+                                                                                                        in Route
+                                                                                                        in Unknown
+                                                                                                        in RNCSafeAreaProvider
+                                                                                                        in SafeAreaProvider
+                                                                                                        in wrapper
+                                                                                                        in EnsureSingleNavigator
+                                                                                                        in BaseNavigationContainer
+                                                                                                        in ThemeProvider
+                                                                                                        in NavigationContainerInner
+                                                                                                        in ContextNavigator
+                                                                                                        in ExpoRoot
+                                                                                                        in App
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in AppContainer, js engine: hermes, stack:
+                                                                                                    DashboardScreen@1:1140390
+                                                                                                    renderWithHooks@1:318760
+                                                                                                    updateFunctionComponent@1:327966
+                                                                                                    beginWork@1:366343
+                                                                                                    performUnitOfWork@1:353020
+                                                                                                    workLoopSync@1:352150
+                                                                                                    renderRootSync@1:351981
+                                                                                                    flushSyncWorkAcrossRoots_impl@1:308463
+                                                                                                    scheduleUpdateOnFiber@1:349487
+                                                                                                    dispatchSetState@1:323174
+                                                                                                    anonymous@1:1141770
+                                                                                                    anonymous@1:82073
+                                                                                                    _callTimer@1:81072
+                                                                                                    _callReactNativeMicrotasksPass@1:81216
+                                                                                                    callReactNativeMicrotasks@1:83144
+                                                                                                    __callReactNativeMicrotasks@1:46882
+                                                                                                    anonymous@1:46018
+                                                                                                    __guard@1:46756
+                                                                                                    flushedQueue@1:45929
+                                                                                                    invokeCallbackAndReturnFlushedQueue@1:45872
+2026-04-21 00:16:18.358  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:16:20.064   783-847   TouchUtility            ven...hardware.mtkpower@1.0-service  I  notifyAppState error = NULL
+2026-04-21 00:16:21.378  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:16:24.405  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:16:24.414  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:16:24.512  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:16:27.429  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:16:30.455  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:16:33.480  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:16:36.500  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:16:39.525  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:16:42.520  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView before requestLayout isParentLayoutRequested = false
+2026-04-21 00:16:42.520  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:16:42.520  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView after requestLayout
+2026-04-21 00:16:42.520  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView after requestLayout
+2026-04-21 00:16:42.523  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:16:42.523  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView after requestLayout
+2026-04-21 00:16:42.523  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView setVisibility :0
+2026-04-21 00:16:42.524  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:16:42.524  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView after requestLayout
+2026-04-21 00:16:42.525  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:16:42.525  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView after requestLayout
+2026-04-21 00:16:42.525  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:16:42.525  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView after requestLayout
+2026-04-21 00:16:42.525  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView setVisibility :0
+2026-04-21 00:16:42.525  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:16:42.525  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView after requestLayout
+2026-04-21 00:16:42.526  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer setVisibility :0
+2026-04-21 00:16:42.526  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer before requestLayout isParentLayoutRequested = false
+2026-04-21 00:16:42.526  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer after requestLayout
+2026-04-21 00:16:42.528  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer setVisibility :0
+2026-04-21 00:16:42.543  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:16:42.546  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:16:42.546  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView after requestLayout
+2026-04-21 00:16:42.546  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:16:42.546  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView after requestLayout
+2026-04-21 00:16:42.546  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView setVisibility :0
+2026-04-21 00:16:42.546  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:16:42.546  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView after requestLayout
+2026-04-21 00:16:42.546  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer setVisibility :0
+2026-04-21 00:16:42.546  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer setVisibility :0
+2026-04-21 00:16:42.551   783-847   TouchUtility            ven...hardware.mtkpower@1.0-service  I  notifyAppState error = NULL
+2026-04-21 00:16:42.836   783-847   TouchUtility            ven...hardware.mtkpower@1.0-service  I  notifyAppState error = NULL
+2026-04-21 00:16:43.315   783-847   libPowerHal             ven...hardware.mtkpower@1.0-service  E  error : 2, No such file or directory
+2026-04-21 00:16:43.316   783-847   libPowerHal             ven...hardware.mtkpower@1.0-service  E  error : 2, No such file or directory
+2026-04-21 00:16:43.615  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer setVisibility :8
+2026-04-21 00:16:43.615  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer before requestLayout isParentLayoutRequested = false
+2026-04-21 00:16:43.615  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer after requestLayout
+2026-04-21 00:16:43.668  1557-1830  ProcessManager          system_server                        E  error write exception log
+2026-04-21 00:16:43.719   783-847   libPowerHal             ven...hardware.mtkpower@1.0-service  E  error : 2, No such file or directory
+2026-04-21 00:16:43.719   783-847   libPowerHal             ven...hardware.mtkpower@1.0-service  E  error : 2, No such file or directory
+2026-04-21 00:16:45.570  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:16:45.839   783-847   TouchUtility            ven...hardware.mtkpower@1.0-service  I  notifyAppState error = NULL
+2026-04-21 00:16:48.594  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:16:51.615  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:16:54.641  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:16:57.667  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:00.688  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:03.710  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:06.731  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:09.760  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:12.785  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:15.809  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:18.836  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:21.858  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:24.459  2123-31330 bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:17:24.558  2123-31330 bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:17:24.882  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:27.907  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:30.927  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:33.951  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:36.978  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:40.005  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:43.035  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:44.023   783-847   TouchUtility            ven...hardware.mtkpower@1.0-service  I  notifyAppState error = NULL
+2026-04-21 00:17:45.969   783-847   TouchUtility            ven...hardware.mtkpower@1.0-service  I  notifyAppState error = NULL
+2026-04-21 00:17:46.054  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:47.458  1946-1981  ReactNativeJS           com.tkolya.korneo                    E  [ReferenceError: Property 'canApproveRequests' doesn't exist]
+2026-04-21 00:17:47.467  1946-1981  ReactNativeJS           com.tkolya.korneo                    E  ReferenceError: Property 'canCreateTasks' doesn't exist
+                                                                                                    
+                                                                                                    This error is located at:
+                                                                                                        in DashboardScreen
+                                                                                                        in Unknown
+                                                                                                        in Suspense
+                                                                                                        in Route
+                                                                                                        in Unknown
+                                                                                                        in StaticContainer
+                                                                                                        in EnsureSingleNavigator
+                                                                                                        in SceneView
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in Background
+                                                                                                        in Screen
+                                                                                                        in RNSScreen
+                                                                                                        in Unknown
+                                                                                                        in Suspender
+                                                                                                        in Suspense
+                                                                                                        in Freeze
+                                                                                                        in DelayedFreeze
+                                                                                                        in InnerScreen
+                                                                                                        in Screen
+                                                                                                        in MaybeScreen
+                                                                                                        in RNSScreenContainer
+                                                                                                        in ScreenContainer
+                                                                                                        in MaybeScreenContainer
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in SafeAreaProviderCompat
+                                                                                                        in BottomTabView
+                                                                                                        in PreventRemoveProvider
+                                                                                                        in NavigationContent
+                                                                                                        in Unknown
+                                                                                                        in BottomTabNavigator
+                                                                                                        in Unknown
+                                                                                                        in AppTabsLayout
+                                                                                                        in Unknown
+                                                                                                        in Suspense
+                                                                                                        in Route
+                                                                                                        in Unknown
+                                                                                                        in StaticContainer
+                                                                                                        in EnsureSingleNavigator
+                                                                                                        in SceneView
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in DebugContainer
+                                                                                                        in MaybeNestedStack
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in RNSScreen
+                                                                                                        in Unknown
+                                                                                                        in Suspender
+                                                                                                        in Suspense
+                                                                                                        in Freeze
+                                                                                                        in DelayedFreeze
+                                                                                                        in InnerScreen
+                                                                                                        in Screen
+                                                                                                        in SceneView
+                                                                                                        in Suspender
+                                                                                                        in Suspense
+                                                                                                        in Freeze
+                                                                                                        in DelayedFreeze
+                                                                                                        in RNSScreenStack
+                                                                                                        in ScreenStack
+                                                                                                        in NativeStackViewInner
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in SafeAreaProviderCompat
+                                                                                                        in NativeStackView
+                                                                                                        in PreventRemoveProvider
+                                                                                                        in NavigationContent
+                                                                                                        in Unknown
+                                                                                                        in NativeStackNavigator
+                                                                                                        in Unknown
+                                                                                                        in RootNavigator
+                                                                                                        in AuthProvider
+                                                                                                        in RootLayout
+                                                                                                        in Unknown
+                                                                                                        in Suspense
+                                                                                                        in Route
+                                                                                                        in Unknown
+                                                                                                        in RNCSafeAreaProvider
+                                                                                                        in SafeAreaProvider
+                                                                                                        in wrapper
+                                                                                                        in EnsureSingleNavigator
+                                                                                                        in BaseNavigationContainer
+                                                                                                        in ThemeProvider
+                                                                                                        in NavigationContainerInner
+                                                                                                        in ContextNavigator
+                                                                                                        in ExpoRoot
+                                                                                                        in App
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in AppContainer, js engine: hermes
+2026-04-21 00:17:47.469  1946-1982  unknown:ReactNative     com.tkolya.korneo                    E  ReferenceError: Property 'canApproveRequests' doesn't exist, js engine: hermes, stack:
+                                                                                                    ?anon_0_@1:1141349
+                                                                                                    asyncGeneratorStep@1:519014
+                                                                                                    _next@1:519271
+                                                                                                    anonymous@1:82073
+                                                                                                    _callTimer@1:81072
+                                                                                                    _callReactNativeMicrotasksPass@1:81216
+                                                                                                    callReactNativeMicrotasks@1:83144
+                                                                                                    __callReactNativeMicrotasks@1:46882
+                                                                                                    anonymous@1:46018
+                                                                                                    __guard@1:46756
+                                                                                                    flushedQueue@1:45929
+                                                                                                    invokeCallbackAndReturnFlushedQueue@1:45872
+2026-04-21 00:17:47.475  1946-1982  unknown:ReactNative     com.tkolya.korneo                    E  ReferenceError: Property 'canCreateTasks' doesn't exist
+                                                                                                    
+                                                                                                    This error is located at:
+                                                                                                        in DashboardScreen
+                                                                                                        in Unknown
+                                                                                                        in Suspense
+                                                                                                        in Route
+                                                                                                        in Unknown
+                                                                                                        in StaticContainer
+                                                                                                        in EnsureSingleNavigator
+                                                                                                        in SceneView
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in Background
+                                                                                                        in Screen
+                                                                                                        in RNSScreen
+                                                                                                        in Unknown
+                                                                                                        in Suspender
+                                                                                                        in Suspense
+                                                                                                        in Freeze
+                                                                                                        in DelayedFreeze
+                                                                                                        in InnerScreen
+                                                                                                        in Screen
+                                                                                                        in MaybeScreen
+                                                                                                        in RNSScreenContainer
+                                                                                                        in ScreenContainer
+                                                                                                        in MaybeScreenContainer
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in SafeAreaProviderCompat
+                                                                                                        in BottomTabView
+                                                                                                        in PreventRemoveProvider
+                                                                                                        in NavigationContent
+                                                                                                        in Unknown
+                                                                                                        in BottomTabNavigator
+                                                                                                        in Unknown
+                                                                                                        in AppTabsLayout
+                                                                                                        in Unknown
+                                                                                                        in Suspense
+                                                                                                        in Route
+                                                                                                        in Unknown
+                                                                                                        in StaticContainer
+                                                                                                        in EnsureSingleNavigator
+                                                                                                        in SceneView
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in DebugContainer
+                                                                                                        in MaybeNestedStack
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in RNSScreen
+                                                                                                        in Unknown
+                                                                                                        in Suspender
+                                                                                                        in Suspense
+                                                                                                        in Freeze
+                                                                                                        in DelayedFreeze
+                                                                                                        in InnerScreen
+                                                                                                        in Screen
+                                                                                                        in SceneView
+                                                                                                        in Suspender
+                                                                                                        in Suspense
+                                                                                                        in Freeze
+                                                                                                        in DelayedFreeze
+                                                                                                        in RNSScreenStack
+                                                                                                        in ScreenStack
+                                                                                                        in NativeStackViewInner
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in SafeAreaProviderCompat
+                                                                                                        in NativeStackView
+                                                                                                        in PreventRemoveProvider
+                                                                                                        in NavigationContent
+                                                                                                        in Unknown
+                                                                                                        in NativeStackNavigator
+                                                                                                        in Unknown
+                                                                                                        in RootNavigator
+                                                                                                        in AuthProvider
+                                                                                                        in RootLayout
+                                                                                                        in Unknown
+                                                                                                        in Suspense
+                                                                                                        in Route
+                                                                                                        in Unknown
+                                                                                                        in RNCSafeAreaProvider
+                                                                                                        in SafeAreaProvider
+                                                                                                        in wrapper
+                                                                                                        in EnsureSingleNavigator
+                                                                                                        in BaseNavigationContainer
+                                                                                                        in ThemeProvider
+                                                                                                        in NavigationContainerInner
+                                                                                                        in ContextNavigator
+                                                                                                        in ExpoRoot
+                                                                                                        in App
+                                                                                                        in RCTView
+                                                                                                        in Unknown
+                                                                                                        in AppContainer, js engine: hermes, stack:
+                                                                                                    DashboardScreen@1:1140390
+                                                                                                    renderWithHooks@1:318760
+                                                                                                    updateFunctionComponent@1:327966
+                                                                                                    beginWork@1:366343
+                                                                                                    performUnitOfWork@1:353020
+                                                                                                    workLoopSync@1:352150
+                                                                                                    renderRootSync@1:351981
+                                                                                                    flushSyncWorkAcrossRoots_impl@1:308463
+                                                                                                    scheduleUpdateOnFiber@1:349487
+                                                                                                    dispatchSetState@1:323174
+                                                                                                    anonymous@1:1141770
+                                                                                                    anonymous@1:82073
+                                                                                                    _callTimer@1:81072
+                                                                                                    _callReactNativeMicrotasksPass@1:81216
+                                                                                                    callReactNativeMicrotasks@1:83144
+                                                                                                    __callReactNativeMicrotasks@1:46882
+                                                                                                    anonymous@1:46018
+                                                                                                    __guard@1:46756
+                                                                                                    flushedQueue@1:45929
+                                                                                                    invokeCallbackAndReturnFlushedQueue@1:45872
+2026-04-21 00:17:49.025   783-847   TouchUtility            ven...hardware.mtkpower@1.0-service  I  notifyAppState error = NULL
+2026-04-21 00:17:49.070  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:49.708  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView before requestLayout isParentLayoutRequested = false
+2026-04-21 00:17:49.708  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:17:49.708  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView after requestLayout
+2026-04-21 00:17:49.708  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView after requestLayout
+2026-04-21 00:17:49.716  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:17:49.716  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView after requestLayout
+2026-04-21 00:17:49.717  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView setVisibility :0
+2026-04-21 00:17:49.717  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:17:49.718  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView after requestLayout
+2026-04-21 00:17:49.720  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:17:49.720  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView after requestLayout
+2026-04-21 00:17:49.720  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:17:49.720  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView after requestLayout
+2026-04-21 00:17:49.720  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView setVisibility :0
+2026-04-21 00:17:49.720  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:17:49.720  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView after requestLayout
+2026-04-21 00:17:49.720  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer setVisibility :0
+2026-04-21 00:17:49.720  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer before requestLayout isParentLayoutRequested = false
+2026-04-21 00:17:49.720  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer after requestLayout
+2026-04-21 00:17:49.722  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer setVisibility :0
+2026-04-21 00:17:49.740  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:17:49.740  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView after requestLayout
+2026-04-21 00:17:49.741  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:17:49.741  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView after requestLayout
+2026-04-21 00:17:49.741  2223-2223  OnGlobalListenerError   com.miui.home                        D  TaskStackView setVisibility :0
+2026-04-21 00:17:49.741  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView before requestLayout isParentLayoutRequested = true
+2026-04-21 00:17:49.741  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsView after requestLayout
+2026-04-21 00:17:49.741  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer setVisibility :0
+2026-04-21 00:17:49.745  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer setVisibility :0
+2026-04-21 00:17:49.746   783-847   TouchUtility            ven...hardware.mtkpower@1.0-service  I  notifyAppState error = NULL
+2026-04-21 00:17:50.024   783-847   TouchUtility            ven...hardware.mtkpower@1.0-service  I  notifyAppState error = NULL
+2026-04-21 00:17:50.440   783-847   libPowerHal             ven...hardware.mtkpower@1.0-service  E  error : 2, No such file or directory
+2026-04-21 00:17:50.441   783-847   libPowerHal             ven...hardware.mtkpower@1.0-service  E  error : 2, No such file or directory
+2026-04-21 00:17:50.744  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer setVisibility :8
+2026-04-21 00:17:50.744  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer before requestLayout isParentLayoutRequested = false
+2026-04-21 00:17:50.744  2223-2223  OnGlobalListenerError   com.miui.home                        D  RecentsContainer after requestLayout
+2026-04-21 00:17:50.802  1557-1830  ProcessManager          system_server                        E  error write exception log
+2026-04-21 00:17:50.842   783-847   libPowerHal             ven...hardware.mtkpower@1.0-service  E  error : 2, No such file or directory
+2026-04-21 00:17:50.842   783-847   libPowerHal             ven...hardware.mtkpower@1.0-service  E  error : 2, No such file or directory
+2026-04-21 00:17:52.088  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:53.756   835-5762  AudioFlinger_Threads    audioserver                          E  open /proc/2223/cmdline error
+2026-04-21 00:17:54.484   835-5762  AudioFlinger_Threads    audioserver                          E  open /proc/2223/cmdline error
+2026-04-21 00:17:54.953  2199-2699  QSTileHost              com.android.systemui                 E  PackageManager Error:com.tkolya.korneo
+2026-04-21 00:17:55.095  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:17:55.162 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.tkolya.korneo' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:17:55.226  1557-3865  AppSearchIcing          system_server                        W  status-util.h:31: Error: 3, Message: Invalid cycle detected in type configs. 'android$apps-db/AppFunctionNamedDataTypeMetadataDocument-com.google.android.apps.wellbeing' references or inherits from itself.
+2026-04-21 00:17:55.257  1557-3865  AppSearchIcing          system_server                        W  status-util.h:31: Error: 3, Message: Invalid cycle detected in type configs. 'android$apps-db/AppFunctionNamedDataTypeMetadataDocument-com.google.android.apps.wellbeing' references or inherits from itself.
+2026-04-21 00:17:55.371  2165-2165  FeatureFlagsImplExport  pid-2165                             W  java.lang.NoClassDefFoundError: Failed resolution of: Landroid/os/flagging/AconfigPackage;
+2026-04-21 00:17:55.404  2165-2165  FeatureFlagsImplExport  pid-2165                             W  java.lang.NoClassDefFoundError: Failed resolution of: Landroid/os/flagging/AconfigPackage;
+2026-04-21 00:17:55.405  2165-2165  FeatureFlagsImplExport  pid-2165                             W  java.lang.NoClassDefFoundError: Failed resolution of: Landroid/os/flagging/AconfigPackage;
+2026-04-21 00:17:55.405  2165-2165  FeatureFlagsImplExport  pid-2165                             W  java.lang.NoClassDefFoundError: Failed resolution of: Landroid/os/flagging/AconfigPackage;
+2026-04-21 00:17:55.417  2165-2165  FeatureFlagsImplExport  pid-2165                             W  java.lang.NoClassDefFoundError: Failed resolution of: Landroid/os/flagging/AconfigPackage;
+2026-04-21 00:17:55.641  2165-2499  FeatureFlagsImplExport  pid-2165                             W  java.lang.NoClassDefFoundError: Failed resolution of: Landroid/os/flagging/AconfigPackage;
+2026-04-21 00:17:55.642  2165-2499  FeatureFlagsImplExport  pid-2165                             W  java.lang.NoClassDefFoundError: Failed resolution of: Landroid/os/flagging/AconfigPackage;
+2026-04-21 00:17:55.707  2102-2665  System.err              pid-2102                             W  	at org.json.JSONTokener.syntaxError(JSONTokener.java:469)
+2026-04-21 00:17:55.707  2102-2665  System.err              pid-2102                             W  	at org.json.JSONTokener.syntaxError(JSONTokener.java:469)
+2026-04-21 00:17:55.708  2102-2665  System.err              pid-2102                             W  	at org.json.JSONTokener.syntaxError(JSONTokener.java:469)
+2026-04-21 00:17:55.792  2165-2499  FeatureFlagsImplExport  pid-2165                             W  java.lang.NoClassDefFoundError: Failed resolution of: Landroid/os/flagging/AconfigPackage;
+2026-04-21 00:17:55.851  2165-2499  FeatureFlagsImplExport  pid-2165                             W  java.lang.NoClassDefFoundError: Failed resolution of: Landroid/os/flagging/AconfigPackage;
+2026-04-21 00:17:55.905  2165-2499  FeatureFlagsImplExport  pid-2165                             W  java.lang.NoClassDefFoundError: Failed resolution of: Landroid/os/flagging/AconfigPackage;
+2026-04-21 00:17:55.943  2165-2499  FeatureFlagsImplExport  pid-2165                             W  java.lang.NoClassDefFoundError: Failed resolution of: Landroid/os/flagging/AconfigPackage;
+2026-04-21 00:17:56.027   783-847   TouchUtility            ven...hardware.mtkpower@1.0-service  I  notifyAppState error = NULL
+2026-04-21 00:17:58.103  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:01.115  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:04.132  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:07.155  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:10.181  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:13.207  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:16.231  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:19.251  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:19.817 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.mainline.primary.libs' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:19.854 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.tzdata4' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:19.865 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.permission' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.003 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.appsearch' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.004 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.media.swcodec' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.008 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.art' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.036 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.mediaprovider' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.099 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.adbd' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.099 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.resolv' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.128 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.conscrypt' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.130 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.media' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.162 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.neuralnetworks' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.171 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.ipsec' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.189 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.ondevicepersonalization' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.194 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.sdkext' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.221 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.adservices' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.222 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.tethering' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.231 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.extservices' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.302 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.os.statsd' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.328 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.cellbroadcast' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:20.384 32212-32212 Finsky                  com.android.vending                  W  [2] STU: Failed to get storage stats for package 'com.google.android.scheduling' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+2026-04-21 00:18:22.271  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:24.521  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:18:24.615  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:18:25.295  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:28.321  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:31.347  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:34.379  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:37.405  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:40.432  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:43.458  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:46.491  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:49.517  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:52.543  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:55.577  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:18:58.603  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:01.624  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:04.651  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:07.679  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:10.707  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:13.731  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:16.756  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:19.779  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:22.801  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:24.547  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:19:24.637  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:19:25.818  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:28.846  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:31.870  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:34.894  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:37.917  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:40.942  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:43.968  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:46.996  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:50.028  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:53.052  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:56.075  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:19:59.096  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:02.121  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:05.146  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:08.172  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:11.193  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:14.220  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:17.240  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:20.266  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:23.290  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:24.577  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:20:24.666  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:20:26.313  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:29.334  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:32.357  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:35.383  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:38.410  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:41.435  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:44.463  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:47.491  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:50.513  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:53.539  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:56.560  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:20:59.587  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:02.611  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:05.637  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:08.660  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:11.684  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:14.711  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:17.732  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:20.758  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:23.784  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:24.633  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:21:24.722  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:21:26.807  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:28.623  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:21:28.661  1557-1779  WifiVendorHal           system_server                        E  getUsableChannels(l.4145) failed {.code = ERROR_NOT_SUPPORTED, .description = }
+2026-04-21 00:21:29.154  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:21:29.837  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:32.862  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:35.886  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:38.909  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:41.937  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:44.963  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:47.989  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:51.012  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:54.037  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:21:57.064  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:00.089  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:03.114  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:06.137  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:09.165  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:12.184  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:15.208  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:18.230  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:21.254  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:24.278  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:24.651  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:22:24.744  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:22:27.300  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:30.321  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:33.346  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:36.372  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:39.397  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:42.418  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:45.445  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:48.469  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:51.493  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:53.391  2380-30784 PhBaseOp                com.google.android.gms.persistent    W  Phenotype API error. Event: # iwzi@1f273745, EventCode: GET_EXP [CONTEXT service_id=51 ] (Ask Gemini)
+                                                                                                    ewur: 29505: No config packages for log source, or config package not registered
+                                                                                                    	at ewxi.f(:com.google.android.gms@261332029@26.13.32 (190400-895912391):77)
+                                                                                                    	at ewxg.i(:com.google.android.gms@261332029@26.13.32 (190400-895912391):3)
+                                                                                                    	at ewwk.h(:com.google.android.gms@261332029@26.13.32 (190400-895912391):31)
+                                                                                                    	at ewwk.f(:com.google.android.gms@261332029@26.13.32 (190400-895912391):13)
+                                                                                                    	at curv.fD(:com.google.android.gms@261332029@26.13.32 (190400-895912391):1)
+                                                                                                    	at cusg.run(:com.google.android.gms@261332029@26.13.32 (190400-895912391):118)
+                                                                                                    	at gxog.run(:com.google.android.gms@261332029@26.13.32 (190400-895912391):19)
+                                                                                                    	at bipz.c(:com.google.android.gms@261332029@26.13.32 (190400-895912391):50)
+                                                                                                    	at bipz.run(:com.google.android.gms@261332029@26.13.32 (190400-895912391):73)
+                                                                                                    	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1154)
+                                                                                                    	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:652)
+                                                                                                    	at bivq.run(:com.google.android.gms@261332029@26.13.32 (190400-895912391):8)
+                                                                                                    	at java.lang.Thread.run(Thread.java:1564)
+2026-04-21 00:22:54.517  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:22:57.537  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:00.563  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:01.311  5806-6058  PushService             com.xiaomi.xmsf                      W  [Tid:72] update the connection status. connected -> disconnected : ERROR_READ_ERROR 
+2026-04-21 00:23:01.321  5806-6058  PushService             com.xiaomi.xmsf                      W  [Tid:72] update the client 5 status. binded->unbind CLOSE ERROR_READ_ERROR null null
+2026-04-21 00:23:01.328  5806-6058  PushService             com.xiaomi.xmsf                      W  [Tid:72] update the connection status. disconnected -> connecting : ERROR_OK 
+2026-04-21 00:23:01.429  5806-3146  PushService             com.xiaomi.xmsf                      W  [Tid:164] update the connection status. connecting -> connected : ERROR_OK 
+2026-04-21 00:23:01.433  5806-6058  PushService             com.xiaomi.xmsf                      W  [Tid:72] update the client 5 status. unbind->binding unknown ERROR_OK null null
+2026-04-21 00:23:01.474  5806-6058  PushService             com.xiaomi.xmsf                      W  [Tid:72] update the client 5 status. binding->binded OPEN ERROR_OK null null
+2026-04-21 00:23:03.585  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:06.609  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:09.635  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:12.660  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:15.687  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:18.710  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:21.735  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:24.709  2123-2138  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:23:24.758  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:24.795  2123-4006  bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:23:27.781  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:30.805  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:33.834  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:36.856  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:39.882  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:42.909  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:45.935  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:48.961  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:51.982  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:53.680  1557-1608  ZygoteProcess           system_server                        W  Got error connecting to zygote, retrying. msg= Connection refused
+2026-04-21 00:23:55.005  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:23:58.025  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:01.044  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:04.069  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:07.094  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:10.122  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:13.148  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:16.170  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:19.196  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:22.220  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:24.746  2123-31330 bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:24:24.852  2123-31330 bt_stack                com.android.bluetooth                E  [ERROR:com_android_bluetooth_btservice_ActivityAttribution.cpp(172)] Failed to get ActivityAttribution Interface
+2026-04-21 00:24:25.245  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:28.271  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:31.291  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:34.316  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:37.339  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:40.365  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:43.392  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}
+2026-04-21 00:24:46.413  1557-1779  WifiVendorHal           system_server                        E  getWifiLinkLayerStats_1_5_Internal(l.1176) failed {.code = ERROR_UNKNOWN, .description = unknown}

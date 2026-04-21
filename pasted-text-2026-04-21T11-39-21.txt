@@ -1,0 +1,179 @@
+{
+  "event_message": "GET | 401 | https://jmxjbdnqnzkzxgsfywha.supabase.co/rest/v1/users?select=id%2Cname%2Crole%2Cis_online%2Clast_seen_at&order=name.asc | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+  "id": "b1ee50ca-c06f-497f-a180-2f0e14a5a6a0",
+  "metadata": [
+    {
+      "load_balancer_experimental_routing": null,
+      "load_balancer_geo_aware_info": [],
+      "load_balancer_redirect_identifier": null,
+      "logflare_worker": [
+        {
+          "worker_id": "AGNBEC"
+        }
+      ],
+      "request": [
+        {
+          "cf": [
+            {
+              "asOrganization": "FIRST SERVER, SOCIEDAD LIMITADA",
+              "asn": null,
+              "botManagement": [
+                {
+                  "corporateProxy": null,
+                  "detectionIds": [],
+                  "ja3Hash": "ee78eafa2be15594973146934e8830d8",
+                  "ja4": "t13d1516h2_8daaf6152771_d8a2da3f94cd",
+                  "ja4Signals": [],
+                  "jsDetection": [],
+                  "score": null,
+                  "staticResource": null,
+                  "verifiedBot": null
+                }
+              ],
+              "city": "Helsinki",
+              "clientAcceptEncoding": null,
+              "clientTcpRtt": null,
+              "clientTrustScore": 95,
+              "colo": "HEL",
+              "continent": null,
+              "country": "FI",
+              "edgeRequestKeepAliveStatus": null,
+              "httpProtocol": "HTTP/2",
+              "isEUCountry": null,
+              "latitude": null,
+              "longitude": null,
+              "metroCode": null,
+              "postalCode": "00100",
+              "region": "Uusimaa",
+              "regionCode": null,
+              "requestPriority": null,
+              "timezone": "Europe/Helsinki",
+              "tlsCipher": null,
+              "tlsClientAuth": [],
+              "tlsClientCiphersSha1": null,
+              "tlsClientExtensionsSha1": null,
+              "tlsClientExtensionsSha1Le": null,
+              "tlsClientHelloLength": null,
+              "tlsClientRandom": null,
+              "tlsExportedAuthenticator": [],
+              "tlsVersion": null,
+              "verifiedBotCategory": null
+            }
+          ],
+          "headers": [
+            {
+              "accept": "*/*",
+              "cf_cache_status": null,
+              "cf_connecting_ip": "132.243.23.38",
+              "cf_ipcountry": "FI",
+              "cf_ray": "9efa336d6b78b8cb",
+              "content_length": null,
+              "content_location": null,
+              "content_range": null,
+              "content_type": null,
+              "date": null,
+              "host": "jmxjbdnqnzkzxgsfywha.supabase.co",
+              "prefer": null,
+              "range": null,
+              "referer": "https://tkolya-dotcom.github.io/",
+              "sb_forwarded_for": null,
+              "sb_gateway_mode": null,
+              "sb_gateway_version": null,
+              "traceparent": null,
+              "transfer_encoding": null,
+              "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+              "x_amz_content_sha256": null,
+              "x_amz_date": null,
+              "x_client_info": "supabase-js-web/2.104.0",
+              "x_forwarded_for": null,
+              "x_forwarded_host": null,
+              "x_forwarded_proto": "https",
+              "x_forwarded_user_agent": null,
+              "x_kong_proxy_latency": null,
+              "x_kong_upstream_latency": null,
+              "x_real_ip": "132.243.23.38"
+            }
+          ],
+          "host": "jmxjbdnqnzkzxgsfywha.supabase.co",
+          "method": "GET",
+          "path": "/rest/v1/users",
+          "port": null,
+          "protocol": "https:",
+          "sb": [
+            {
+              "apikey": [],
+              "auth_user": "dac6b84e-c098-4c7c-b9d0-3fbcfe718e2f",
+              "aws_v4": [],
+              "jwt": [
+                {
+                  "apikey": [
+                    {
+                      "invalid": null,
+                      "payload": [
+                        {
+                          "algorithm": "HS256",
+                          "expires_at": 2086730434,
+                          "issued_at": 1771154434,
+                          "issuer": "supabase",
+                          "role": "anon",
+                          "signature_prefix": "z6y6DG",
+                          "subject": null
+                        }
+                      ]
+                    }
+                  ],
+                  "authorization": [
+                    {
+                      "invalid": null,
+                      "payload": [
+                        {
+                          "algorithm": "ES256",
+                          "expires_at": 1776750605,
+                          "issued_at": 1776747005,
+                          "issuer": "https://jmxjbdnqnzkzxgsfywha.supabase.co/auth/v1",
+                          "key_id": "573ac24b-91b9-4067-8917-6c119f901d7b",
+                          "role": "authenticated",
+                          "session_id": "6150c02e-c6ff-49e3-ae1e-8b6652c8abe4",
+                          "signature_prefix": "0vap8M",
+                          "subject": "dac6b84e-c098-4c7c-b9d0-3fbcfe718e2f"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "search": "?select=id%2Cname%2Crole%2Cis_online%2Clast_seen_at&order=name.asc",
+          "url": "https://jmxjbdnqnzkzxgsfywha.supabase.co/rest/v1/users?select=id%2Cname%2Crole%2Cis_online%2Clast_seen_at&order=name.asc"
+        }
+      ],
+      "response": [
+        {
+          "headers": [
+            {
+              "cf_cache_status": "DYNAMIC",
+              "cf_ray": "9efa336d73c4b8cb-HEL",
+              "content_length": "70",
+              "content_location": null,
+              "content_range": null,
+              "content_type": "application/json; charset=utf-8",
+              "date": "Tue, 21 Apr 2026 06:06:07 GMT",
+              "proxy_status": "PostgREST; error=PGRST303",
+              "sb_gateway_mode": null,
+              "sb_gateway_version": "1",
+              "sb_request_id": null,
+              "transfer_encoding": null,
+              "x_kong_proxy_latency": null,
+              "x_kong_upstream_latency": null,
+              "x_sb_error_code": null
+            }
+          ],
+          "origin_time": 54,
+          "status_code": 401
+        }
+      ]
+    }
+  ],
+  "timestamp": 1776751566955000
+}
