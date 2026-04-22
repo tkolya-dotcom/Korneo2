@@ -119,7 +119,9 @@ jobs:
 
       - name: Collect release APK
         run: |
-          APK_PATH=$(find apps/mobile/android/app/build/outputs/apk/release -name "*.apk" -print -quit)
+          echo "APK files under outputs:"
+          find apps/mobile/android/app/build/outputs -type f | sort || true
+          APK_PATH=$(find apps/mobile/android/app/build/outputs -type f -name "*.apk" -print -quit)
           if [ -z "$APK_PATH" ]; then
             echo "ERROR: No release APK found"
             find apps/mobile/android/app/build/outputs -maxdepth 4 -type f | sort
@@ -128,6 +130,14 @@ jobs:
           echo "Using APK: $APK_PATH"
           cp "$APK_PATH" korneo-release.apk
           ls -lh korneo-release.apk
+
+      - name: Upload Android outputs snapshot
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-build-outputs
+          path: apps/mobile/android/app/build/outputs
+          retention-days: 30
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
