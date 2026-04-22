@@ -26,12 +26,12 @@ export default function AppTabsLayout() {
           backgroundColor: THEME.card,
           borderTopColor: THEME.border,
           borderTopWidth: 1,
-          paddingTop: 4,
-          height: 60,
+          height: 48,
         },
         tabBarActiveTintColor: THEME.accent,
         tabBarInactiveTintColor: THEME.sub,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', marginBottom: 4 },
+        tabBarLabelStyle: { fontSize: 9, fontWeight: '600' },
+        tabBarIconStyle: { width: 20 },
       }}
     >
       {/* Главная */}
@@ -40,7 +40,7 @@ export default function AppTabsLayout() {
         options={{
           title: 'Главная',
           tabBarLabel: 'Главная',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🏠</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>🏠</Text>,
         }}
       />
 
@@ -50,7 +50,7 @@ export default function AppTabsLayout() {
         options={{
           title: 'Проекты',
           tabBarLabel: 'Проекты',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>📁</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📁</Text>,
         }}
       />
 
@@ -60,7 +60,7 @@ export default function AppTabsLayout() {
         options={{
           title: 'Задачи',
           tabBarLabel: 'Задачи',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>✅</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>✅</Text>,
         }}
       />
 
@@ -70,7 +70,7 @@ export default function AppTabsLayout() {
         options={{
           title: 'Монтажи',
           tabBarLabel: 'Монтажи',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🔧</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>🔧</Text>,
         }}
       />
 
@@ -81,7 +81,7 @@ export default function AppTabsLayout() {
           options={{
             title: 'АВР',
             tabBarLabel: 'АВР',
-            tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>⚡</Text>,
+            tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>⚡</Text>,
           }}
         />
       )}
@@ -92,7 +92,7 @@ export default function AppTabsLayout() {
         options={{
           title: 'Чат',
           tabBarLabel: 'Чат',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>💬</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>💬</Text>,
         }}
       />
 
@@ -103,30 +103,10 @@ export default function AppTabsLayout() {
           options={{
             title: 'Склад',
             tabBarLabel: 'Склад',
-            tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>📦</Text>,
+            tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📦</Text>,
           }}
         />
       )}
-
-      {/* Заявки */}
-      <Tabs.Screen
-        name="users"
-        options={{
-          title: 'Люди',
-          tabBarLabel: 'Люди',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>👥</Text>,
-        }}
-      />
-
-      {/* Площадки */}
-      <Tabs.Screen
-        name="sites"
-        options={{
-          title: 'Площадки',
-          tabBarLabel: 'Площадки',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🗺️</Text>,
-        }}
-      />
 
       {/* Профиль */}
       <Tabs.Screen
@@ -134,7 +114,7 @@ export default function AppTabsLayout() {
         options={{
           title: 'Профиль',
           tabBarLabel: 'Профиль',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>👤</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>👤</Text>,
         }}
       />
 

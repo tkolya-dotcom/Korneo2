@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, RefreshControl, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/src/providers/AuthProvider';
-import { materialsApi } from '@/src/lib/supabase';
+import { warehouseApi } from '@/src/lib/supabase';
 
 // Cyberpunk theme
 const C = { bg: '#0A0A0F', card: '#1A1A2E', accent: '#00D9FF', text: '#E0E0E0', sub: '#8892a0', border: 'rgba(0, 217, 255, 0.15)', green: '#00FF88', danger: '#FF3366' };
@@ -25,8 +25,25 @@ export default function WarehouseScreen() {
 
   const loadMaterials = async () => {
     try {
-      const data = await materialsApi.getAll();
-      setMaterials(data || []);
+      // Загружаем складские остатки через warehouse API с quantity_available
+      const data = await warehouseApi.getAll();
+      // Группируем по материалам и суммируем quantity_available
+      const materialMap: any = {};
+      (data || []).forEach((w: any) => {
+        if (w.material_id) {
+          if (!materialMap[w.material_id]) {
+            materialMap[w.material_id] = {
+              id: w.material_id,
+              name: w.material?.name || 'Материал',
+              category: w.material?.category,
+              unit: w.material?.default_unit || w.material?.unit,
+              quantity: 0
+            };
+          }
+          materialMap[w.material_id].quantity += Number(w.quantity_available || 0);
+        }
+      });
+      setMaterials(Object.values(materialMap));
     } catch (e) {
       console.error('Ошибка загрузки:', e);
     } finally {
