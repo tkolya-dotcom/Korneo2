@@ -117,43 +117,24 @@ jobs:
           path: apps/mobile/android-release-build.log
           retention-days: 30
 
-      - name: Generate signing keystore
+      - name: Collect release APK
         run: |
-          keytool -genkeypair \
-            -keystore korneo-release.keystore \
-            -alias korneo \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -storepass korneo123 \
-            -keypass korneo123 \
-            -dname "CN=Korneo, OU=Mobile, O=Korneo, L=SPb, ST=SPb, C=RU" \
-            -noprompt
-
-      - name: Align and sign APK
-        run: |
-          APK_UNSIGNED=$(find apps/mobile/android/app/build/outputs/apk/release -name "app-release-unsigned.apk" | head -1)
-          if [ -z "$APK_UNSIGNED" ]; then
-            APK_UNSIGNED=$(find apps/mobile/android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          APK_PATH=$(find apps/mobile/android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          if [ -z "$APK_PATH" ]; then
+            echo "ERROR: No release APK found"
+            find apps/mobile/android/app/build/outputs -maxdepth 4 -type f | sort
+            exit 1
           fi
-          echo "Signing: $APK_UNSIGNED"
-          $ANDROID_SDK_ROOT/build-tools/35.0.0/zipalign -v -p 4 "$APK_UNSIGNED" korneo-aligned.apk
-          $ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner sign \
-            --ks korneo-release.keystore \
-            --ks-key-alias korneo \
-            --ks-pass pass:korneo123 \
-            --key-pass pass:korneo123 \
-            --out korneo-release-signed.apk \
-            korneo-aligned.apk
-          echo "APK signed successfully"
-          ls -lh korneo-release-signed.apk
+          echo "Using APK: $APK_PATH"
+          cp "$APK_PATH" korneo-release.apk
+          ls -lh korneo-release.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         if: success()
         with:
           name: korneo-release-apk
-          path: korneo-release-signed.apk
+          path: korneo-release.apk
           retention-days: 30
 
       - name: Create GitHub Release
@@ -162,7 +143,7 @@ jobs:
         with:
           tag_name: mobile-v${{ github.run_number }}
           name: Korneo Mobile APK v${{ github.run_number }}
-          files: korneo-release-signed.apk
+          files: korneo-release.apk
           body: |
             ## Korneo Android APK v${{ github.run_number }}
 
