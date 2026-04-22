@@ -105,7 +105,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: korneo-ios-ipa
+          name: korneo-ios-unsigned-ipa
           path: ${{ runner.temp }}/ipa/Korneo-unsigned.ipa
           retention-days: 30
 
@@ -113,12 +113,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: success()
         with:
-          tag_name: ios-v${{ github.run_number }}
-          name: Korneo iOS IPA v${{ github.run_number }}
+          tag_name: ios-unsigned-v${{ github.run_number }}
+          name: Korneo iOS Unsigned IPA v${{ github.run_number }}
           files: ${{ runner.temp }}/ipa/Korneo-unsigned.ipa
           body: |
-            ## Korneo iOS (Unsigned IPA) v${{ github.run_number }}
-            Unsigned IPA — для установки через AltStore / Sideloadly / ESign.
+            ## Korneo iOS Unsigned IPA v${{ github.run_number }}
+
+            This artifact is unsigned and is not suitable for direct installation through iMazing.
+
+            Use it only for re-signing or sideload flows such as AltStore, Sideloadly, or ESign.
           generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
