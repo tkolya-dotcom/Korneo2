@@ -65,13 +65,13 @@ export const usersApi = {
 
 export const projectsApi = {
   getAll: async (status?: string) => {
-    let query = supabase.from('projects').select('*, manager:manager_id(*)');
+    let query = supabase.from('projects').select('*');
     if (status) query = query.eq('status', status);
     const { data, error } = await query;
     return handle(data, error);
   },
   getById: async (id: string) => {
-    const { data, error } = await supabase.from('projects').select('*, manager:manager_id(*)').eq('id', id).single();
+    const { data, error } = await supabase.from('projects').select('*').eq('id', id).single();
     return handle(data, error);
   },
   create: async (project: any) => {
