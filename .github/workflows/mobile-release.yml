@@ -102,6 +102,7 @@ jobs:
       - name: Build Release APK (unsigned)
         working-directory: apps/mobile
         run: |
+          set -o pipefail
           cd android
           ./gradlew assembleRelease --no-daemon -Pkotlin.incremental=false --stacktrace --info 2>&1 | tee ../android-release-build.log
         env:
