@@ -19,8 +19,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase configuration for mobile app.');
 }
 
-const REQUEST_TIMEOUT_MS = 8000;
+const REQUEST_TIMEOUT_MS = 12000;
 const LIST_LIMIT = 50;
+const READ_RETRY_ATTEMPTS = 3;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -48,6 +49,52 @@ export const withTimeout = async <T>(
   }
 };
 
+const wait = (ms: number) =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+const isTransientError = (error: unknown): boolean => {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : '';
+
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes('timed out') ||
+    normalized.includes('timeout') ||
+    normalized.includes('network') ||
+    normalized.includes('socket') ||
+    normalized.includes('failed to fetch') ||
+    normalized.includes('err_')
+  );
+};
+
+const withReadRetry = async <T>(
+  requestFactory: () => PromiseLike<T>,
+  label: string,
+  attempts = READ_RETRY_ATTEMPTS
+): Promise<T> => {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await withTimeout(requestFactory(), label);
+    } catch (error) {
+      lastError = error;
+      if (attempt >= attempts || !isTransientError(error)) {
+        throw error;
+      }
+      await wait(300 * attempt);
+    }
+  }
+
+  throw lastError ?? new Error(`${label} failed`);
+};
+
 const handle = <T>(data: T | null, error: { message: string } | null): T => {
   if (error) {
     throw new Error(error.message);
@@ -55,8 +102,11 @@ const handle = <T>(data: T | null, error: { message: string } | null): T => {
   return data as T;
 };
 
-const safeSingle = async <T>(promise: any) => {
-  const { data, error } = await withTimeout<any>(promise, 'load record');
+const safeSingle = async <T>(
+  requestFactory: () => PromiseLike<any>,
+  label = 'load record'
+) => {
+  const { data, error } = await withReadRetry<any>(requestFactory, label);
   if (error?.code === 'PGRST116') {
     return null;
   }
@@ -84,23 +134,83 @@ const buildFallbackUser = (authUser: { id: string; email?: string | null }) => (
   is_online: false,
 });
 
+type AuthUserLike = {
+  id: string;
+  email?: string | null;
+  user_metadata?: Record<string, unknown>;
+  app_metadata?: Record<string, unknown>;
+};
+
+const FALLBACK_NAME = '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c';
+const VALID_USER_ROLES = ['worker', 'engineer', 'manager', 'deputy_head', 'admin', 'support'] as const;
+type UserRole = (typeof VALID_USER_ROLES)[number];
+
+const resolveAuthRole = (authUser: AuthUserLike): UserRole => {
+  const candidate = authUser.user_metadata?.role ?? authUser.app_metadata?.role;
+  if (typeof candidate !== 'string') {
+    return 'worker';
+  }
+  return (VALID_USER_ROLES as readonly string[]).includes(candidate)
+    ? (candidate as UserRole)
+    : 'worker';
+};
+
+const resolveAuthName = (authUser: AuthUserLike): string => {
+  const metadataName =
+    authUser.user_metadata?.name ??
+    authUser.user_metadata?.full_name ??
+    authUser.app_metadata?.name;
+
+  if (typeof metadataName === 'string' && metadataName.trim()) {
+    return metadataName.trim();
+  }
+
+  const emailName = authUser.email?.split('@')[0]?.trim();
+  return emailName || FALLBACK_NAME;
+};
+
+const buildAuthFallbackUser = (authUser: AuthUserLike) => ({
+  id: authUser.id,
+  auth_user_id: authUser.id,
+  email: authUser.email || '',
+  name: resolveAuthName(authUser),
+  role: resolveAuthRole(authUser),
+  is_online: false,
+});
+
 const getProfileByAuthUserId = async (authUserId: string) =>
   safeSingle(
-    supabase
-      .from('users')
-      .select('*')
-      .eq('auth_user_id', authUserId)
-      .single()
+    () =>
+      supabase
+        .from('users')
+        .select('*')
+        .eq('auth_user_id', authUserId)
+        .single(),
+    'load user profile'
   );
 
 const getProfileByUserId = async (userId: string) =>
   safeSingle(
-    supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    () =>
+      supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single(),
+    'load user profile by id'
   );
+
+const resolveUserProfile = async (authUser: AuthUserLike) => {
+  try {
+    const profile =
+      (await getProfileByAuthUserId(authUser.id)) ||
+      (await getProfileByUserId(authUser.id));
+    return (profile || buildAuthFallbackUser(authUser)) as any;
+  } catch (error) {
+    console.warn('Using fallback profile because users query failed:', error);
+    return buildAuthFallbackUser(authUser) as any;
+  }
+};
 
 const getCurrentProfile = async () => {
   const {
@@ -112,13 +222,9 @@ const getCurrentProfile = async () => {
     throw new Error('Not authenticated');
   }
 
-  const profile =
-    (await getProfileByAuthUserId(authUser.id)) ||
-    (await getProfileByUserId(authUser.id));
-
   return {
     authUser,
-    user: (profile || buildFallbackUser(authUser)) as any,
+    user: await resolveUserProfile(authUser as AuthUserLike),
   };
 };
 
@@ -133,10 +239,7 @@ export const authApi = {
       throw error;
     }
 
-    const profile =
-      (await getProfileByAuthUserId(data.user.id)) ||
-      (await getProfileByUserId(data.user.id)) ||
-      buildFallbackUser(data.user);
+    const profile = await resolveUserProfile(data.user as AuthUserLike);
 
     return { token: data.session?.access_token || null, user: profile as any };
   },
@@ -162,10 +265,7 @@ export const authApi = {
       throw new Error('Registration failed');
     }
 
-    const profile =
-      (await getProfileByAuthUserId(data.user.id)) ||
-      (await getProfileByUserId(data.user.id)) ||
-      buildFallbackUser(data.user);
+    const profile = await resolveUserProfile(data.user as AuthUserLike);
 
     return { token: data.session?.access_token || null, user: { ...(profile as any), name, role } };
   },
@@ -176,11 +276,13 @@ export const authApi = {
   },
 
   getUsers: async (role?: string) => {
-    let query = supabase.from('users').select('*').order('name').limit(LIST_LIMIT);
-    if (role) {
-      query = query.eq('role', role);
-    }
-    const { data, error } = await withTimeout(query, 'load users');
+    const { data, error } = await withReadRetry(() => {
+      let query = supabase.from('users').select('*').order('name').limit(LIST_LIMIT);
+      if (role) {
+        query = query.eq('role', role);
+      }
+      return query;
+    }, 'load users');
     return handle(data, error);
   },
 };
@@ -209,27 +311,30 @@ export const usersApi = {
 
 export const projectsApi = {
   getAll: async (status?: string) => {
-    let query = supabase
-      .from('projects')
-      .select('*, manager:manager_id(*)')
-      .order('created_at', { ascending: false })
-      .limit(LIST_LIMIT);
+    const { data, error } = await withReadRetry(() => {
+      let query = supabase
+        .from('projects')
+        .select('*, manager:manager_id(*)')
+        .order('created_at', { ascending: false })
+        .limit(LIST_LIMIT);
 
-    if (status) {
-      query = query.eq('status', status);
-    }
+      if (status) {
+        query = query.eq('status', status);
+      }
 
-    const { data, error } = await withTimeout(query, 'load projects');
+      return query;
+    }, 'load projects');
     return handle(data, error);
   },
 
   getById: async (id: string) => {
-    const { data, error } = await withTimeout(
-      supabase
-        .from('projects')
-        .select('*, manager:manager_id(*)')
-        .eq('id', id)
-        .single(),
+    const { data, error } = await withReadRetry(
+      () =>
+        supabase
+          .from('projects')
+          .select('*, manager:manager_id(*)')
+          .eq('id', id)
+          .single(),
       'load project'
     );
 
@@ -267,33 +372,36 @@ export const projectsApi = {
 
 export const tasksApi = {
   getAll: async (filters: Record<string, string> = {}) => {
-    let query = supabase
-      .from('tasks')
-      .select('*, project:project_id(*), assignee:assignee_id(*)')
-      .order('created_at', { ascending: false })
-      .limit(LIST_LIMIT);
+    const { data, error } = await withReadRetry(() => {
+      let query = supabase
+        .from('tasks')
+        .select('*, project:project_id(*), assignee:assignee_id(*)')
+        .order('created_at', { ascending: false })
+        .limit(LIST_LIMIT);
 
-    if (filters.project_id) {
-      query = query.eq('project_id', filters.project_id);
-    }
-    if (filters.assignee_id) {
-      query = query.eq('assignee_id', filters.assignee_id);
-    }
-    if (filters.status) {
-      query = query.eq('status', filters.status);
-    }
+      if (filters.project_id) {
+        query = query.eq('project_id', filters.project_id);
+      }
+      if (filters.assignee_id) {
+        query = query.eq('assignee_id', filters.assignee_id);
+      }
+      if (filters.status) {
+        query = query.eq('status', filters.status);
+      }
 
-    const { data, error } = await withTimeout(query, 'load tasks');
+      return query;
+    }, 'load tasks');
     return handle(data, error);
   },
 
   getById: async (id: string) => {
-    const { data, error } = await withTimeout(
-      supabase
-        .from('tasks')
-        .select('*, project:project_id(*), assignee:assignee_id(*)')
-        .eq('id', id)
-        .single(),
+    const { data, error } = await withReadRetry(
+      () =>
+        supabase
+          .from('tasks')
+          .select('*, project:project_id(*), assignee:assignee_id(*)')
+          .eq('id', id)
+          .single(),
       'load task'
     );
 
@@ -344,43 +452,50 @@ export const tasksApi = {
 
 export const installationsApi = {
   getAll: async (filters: Record<string, string> = {}) => {
-    let query = supabase
-      .from('installations')
-      .select('*, project:project_id(*), assignee:assignee_id(*)')
-      .order('created_at', { ascending: false })
-      .limit(LIST_LIMIT);
+    const { data, error } = await withReadRetry(() => {
+      let query = supabase
+        .from('installations')
+        .select('*, project:project_id(*), assignee:assignee_id(*)')
+        .order('created_at', { ascending: false })
+        .limit(LIST_LIMIT);
 
-    if (filters.project_id) {
-      query = query.eq('project_id', filters.project_id);
-    }
-    if (filters.assignee_id) {
-      query = query.eq('assignee_id', filters.assignee_id);
-    }
-    if (filters.status) {
-      query = query.eq('status', filters.status);
-    }
+      if (filters.project_id) {
+        query = query.eq('project_id', filters.project_id);
+      }
+      if (filters.assignee_id) {
+        query = query.eq('assignee_id', filters.assignee_id);
+      }
+      if (filters.status) {
+        query = query.eq('status', filters.status);
+      }
 
-    const { data, error } = await withTimeout(query, 'load installations');
+      return query;
+    }, 'load installations');
     return handle(data, error);
   },
 
   getById: async (id: string) => {
-    const { data, error } = await withTimeout(
-      supabase
-        .from('installations')
-        .select('*, project:project_id(*), assignee:assignee_id(*)')
-        .eq('id', id)
-        .single(),
+    const { data, error } = await withReadRetry(
+      () =>
+        supabase
+          .from('installations')
+          .select('*, project:project_id(*), assignee:assignee_id(*)')
+          .eq('id', id)
+          .single(),
       'load installation'
     );
 
     const installation = handle(data, error);
 
-    const { data: purchaseRequests, error: purchaseError } = await supabase
-      .from('purchase_requests')
-      .select('*, items:purchase_request_items(*), creator:created_by(id, name, email), approved_by_user:approved_by(id, name)')
-      .eq('installation_id', id)
-      .order('created_at', { ascending: false });
+    const { data: purchaseRequests, error: purchaseError } = await withReadRetry(
+      () =>
+        supabase
+          .from('purchase_requests')
+          .select('*, items:purchase_request_items(*), creator:created_by(id, name, email), approved_by_user:approved_by(id, name)')
+          .eq('installation_id', id)
+          .order('created_at', { ascending: false }),
+      'load installation purchase requests'
+    );
 
     if (purchaseError) {
       throw purchaseError;
@@ -433,30 +548,33 @@ export const installationsApi = {
 
 export const purchaseRequestsApi = {
   getAll: async (filters: Record<string, string> = {}) => {
-    let query = supabase
-      .from('purchase_requests')
-      .select('*, items:purchase_request_items(*), installation:installation_id(id, title, address), creator:created_by(id, name, email), approved_by_user:approved_by(id, name)')
-      .order('created_at', { ascending: false })
-      .limit(LIST_LIMIT);
+    const { data, error } = await withReadRetry(() => {
+      let query = supabase
+        .from('purchase_requests')
+        .select('*, items:purchase_request_items(*), installation:installation_id(id, title, address), creator:created_by(id, name, email), approved_by_user:approved_by(id, name)')
+        .order('created_at', { ascending: false })
+        .limit(LIST_LIMIT);
 
-    if (filters.status) {
-      query = query.eq('status', filters.status);
-    }
-    if (filters.created_by) {
-      query = query.eq('created_by', filters.created_by);
-    }
+      if (filters.status) {
+        query = query.eq('status', filters.status);
+      }
+      if (filters.created_by) {
+        query = query.eq('created_by', filters.created_by);
+      }
 
-    const { data, error } = await withTimeout(query, 'load purchase requests');
+      return query;
+    }, 'load purchase requests');
     return handle(data, error);
   },
 
   getById: async (id: string) => {
-    const { data, error } = await withTimeout(
-      supabase
-        .from('purchase_requests')
-        .select('*, items:purchase_request_items(*), installation:installation_id(id, title, address), task:task_id(id, title), creator:created_by(id, name, email), approved_by_user:approved_by(id, name)')
-        .eq('id', id)
-        .single(),
+    const { data, error } = await withReadRetry(
+      () =>
+        supabase
+          .from('purchase_requests')
+          .select('*, items:purchase_request_items(*), installation:installation_id(id, title, address), task:task_id(id, title), creator:created_by(id, name, email), approved_by_user:approved_by(id, name)')
+          .eq('id', id)
+          .single(),
       'load purchase request'
     );
 

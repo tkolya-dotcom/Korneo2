@@ -25,17 +25,19 @@ export default function AppTabsLayout() {
         headerTintColor: COLORS.accent,
         headerTitleStyle: { fontWeight: '700', color: COLORS.text },
         headerShadowVisible: false,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           backgroundColor: COLORS.card,
           borderTopColor: COLORS.border,
           borderTopWidth: 1,
-          height: 62,
-          paddingTop: 6,
+          height: 64,
+          paddingTop: 4,
           paddingBottom: 8,
         },
+        tabBarItemStyle: { paddingVertical: 2 },
         tabBarActiveTintColor: COLORS.accent,
         tabBarInactiveTintColor: COLORS.sub,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginBottom: 2 },
       }}
     >
       <Tabs.Screen
@@ -81,10 +83,14 @@ export default function AppTabsLayout() {
 
       <Tabs.Screen name="purchase-requests" options={{ href: null }} />
       <Tabs.Screen name="archive" options={{ href: null }} />
-      <Tabs.Screen name="project" options={{ href: null }} />
-      <Tabs.Screen name="task" options={{ href: null }} />
-      <Tabs.Screen name="installation" options={{ href: null }} />
-      <Tabs.Screen name="purchase-request" options={{ href: null }} />
+      <Tabs.Screen name="project/[id]" options={{ href: null }} />
+      <Tabs.Screen name="task/[id]" options={{ href: null }} />
+      <Tabs.Screen name="task/create/index" options={{ href: null }} />
+      <Tabs.Screen name="task/[id]/comments/index" options={{ href: null }} />
+      <Tabs.Screen name="installation/[id]" options={{ href: null }} />
+      <Tabs.Screen name="installation/create/index" options={{ href: null }} />
+      <Tabs.Screen name="installation/[id]/comments/index" options={{ href: null }} />
+      <Tabs.Screen name="purchase-request/[id]" options={{ href: null }} />
     </Tabs>
   );
 }

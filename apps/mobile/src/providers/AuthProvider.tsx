@@ -46,13 +46,41 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 const fallbackName = '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c';
+const validRoles: UserRole[] = ['worker', 'engineer', 'manager', 'deputy_head', 'admin', 'support'];
+
+type AuthMetadataUser = {
+  email?: string | null;
+  user_metadata?: Record<string, unknown>;
+  app_metadata?: Record<string, unknown>;
+};
+
+const resolveRoleFromAuth = (authUser: AuthMetadataUser): UserRole => {
+  const roleCandidate = authUser.user_metadata?.role ?? authUser.app_metadata?.role;
+  if (typeof roleCandidate === 'string' && validRoles.includes(roleCandidate as UserRole)) {
+    return roleCandidate as UserRole;
+  }
+  return 'worker';
+};
+
+const resolveNameFromAuth = (authUser: AuthMetadataUser): string => {
+  const metadataName =
+    authUser.user_metadata?.name ??
+    authUser.user_metadata?.full_name ??
+    authUser.app_metadata?.name;
+
+  if (typeof metadataName === 'string' && metadataName.trim()) {
+    return metadataName.trim();
+  }
+
+  return authUser.email?.split('@')[0] || fallbackName;
+};
 
 const fallbackUser = (authUser: { id: string; email?: string | null }): User => ({
   id: authUser.id,
   auth_user_id: authUser.id,
   email: authUser.email || '',
-  name: authUser.email?.split('@')[0] || fallbackName,
-  role: 'worker',
+  name: resolveNameFromAuth(authUser),
+  role: resolveRoleFromAuth(authUser),
 });
 
 export const useAuth = () => {
@@ -84,7 +112,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const init = async () => {
       try {
-        const { data } = await withTimeout(supabase.auth.getSession(), 'restore session', 5000);
+        let sessionResponse;
+        try {
+          sessionResponse = await withTimeout(supabase.auth.getSession(), 'restore session', 6000);
+        } catch (fastError) {
+          console.warn('Fast session restore failed, retrying without timeout:', fastError);
+          sessionResponse = await supabase.auth.getSession();
+        }
+
+        const { data } = sessionResponse;
         if (!mounted) return;
 
         setSession(data.session);
