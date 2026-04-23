@@ -19,6 +19,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase configuration for mobile app.');
 }
 
+const REQUEST_TIMEOUT_MS = 8000;
+const LIST_LIMIT = 50;
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: AsyncStorage,
@@ -28,6 +31,23 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+export const withTimeout = async <T>(
+  promise: PromiseLike<T>,
+  label = 'request',
+  timeoutMs = REQUEST_TIMEOUT_MS
+): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
+
 const handle = <T>(data: T | null, error: { message: string } | null): T => {
   if (error) {
     throw new Error(error.message);
@@ -36,7 +56,7 @@ const handle = <T>(data: T | null, error: { message: string } | null): T => {
 };
 
 const safeSingle = async <T>(promise: any) => {
-  const { data, error } = await promise;
+  const { data, error } = await withTimeout<any>(promise, 'load record');
   if (error?.code === 'PGRST116') {
     return null;
   }
@@ -51,6 +71,15 @@ const getFallbackUser = (authUser: { id: string; email?: string | null }) => ({
   auth_user_id: authUser.id,
   email: authUser.email || '',
   name: authUser.email?.split('@')[0] || 'Пользователь',
+  role: 'worker',
+  is_online: false,
+});
+
+const buildFallbackUser = (authUser: { id: string; email?: string | null }) => ({
+  id: authUser.id,
+  auth_user_id: authUser.id,
+  email: authUser.email || '',
+  name: authUser.email?.split('@')[0] || '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c',
   role: 'worker',
   is_online: false,
 });
@@ -77,7 +106,7 @@ const getCurrentProfile = async () => {
   const {
     data: { user: authUser },
     error,
-  } = await supabase.auth.getUser();
+  } = await withTimeout(supabase.auth.getUser(), 'load auth user');
 
   if (error || !authUser) {
     throw new Error('Not authenticated');
@@ -89,13 +118,17 @@ const getCurrentProfile = async () => {
 
   return {
     authUser,
-    user: (profile || getFallbackUser(authUser)) as any,
+    user: (profile || buildFallbackUser(authUser)) as any,
   };
 };
 
 export const authApi = {
   login: async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await withTimeout(
+      supabase.auth.signInWithPassword({ email, password }),
+      'sign in',
+      12000
+    );
     if (error) {
       throw error;
     }
@@ -103,19 +136,23 @@ export const authApi = {
     const profile =
       (await getProfileByAuthUserId(data.user.id)) ||
       (await getProfileByUserId(data.user.id)) ||
-      getFallbackUser(data.user);
+      buildFallbackUser(data.user);
 
     return { token: data.session?.access_token || null, user: profile as any };
   },
 
   register: async (email: string, password: string, name: string, role: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { name, role },
-      },
-    });
+    const { data, error } = await withTimeout(
+      supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name, role },
+        },
+      }),
+      'register',
+      12000
+    );
 
     if (error) {
       throw error;
@@ -128,7 +165,7 @@ export const authApi = {
     const profile =
       (await getProfileByAuthUserId(data.user.id)) ||
       (await getProfileByUserId(data.user.id)) ||
-      getFallbackUser(data.user);
+      buildFallbackUser(data.user);
 
     return { token: data.session?.access_token || null, user: { ...(profile as any), name, role } };
   },
@@ -139,11 +176,11 @@ export const authApi = {
   },
 
   getUsers: async (role?: string) => {
-    let query = supabase.from('users').select('*').order('name');
+    let query = supabase.from('users').select('*').order('name').limit(LIST_LIMIT);
     if (role) {
       query = query.eq('role', role);
     }
-    const { data, error } = await query;
+    const { data, error } = await withTimeout(query, 'load users');
     return handle(data, error);
   },
 };
@@ -175,22 +212,26 @@ export const projectsApi = {
     let query = supabase
       .from('projects')
       .select('*, manager:manager_id(*)')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(LIST_LIMIT);
 
     if (status) {
       query = query.eq('status', status);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await withTimeout(query, 'load projects');
     return handle(data, error);
   },
 
   getById: async (id: string) => {
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*, manager:manager_id(*)')
-      .eq('id', id)
-      .single();
+    const { data, error } = await withTimeout(
+      supabase
+        .from('projects')
+        .select('*, manager:manager_id(*)')
+        .eq('id', id)
+        .single(),
+      'load project'
+    );
 
     return handle(data, error);
   },
@@ -229,7 +270,8 @@ export const tasksApi = {
     let query = supabase
       .from('tasks')
       .select('*, project:project_id(*), assignee:assignee_id(*)')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(LIST_LIMIT);
 
     if (filters.project_id) {
       query = query.eq('project_id', filters.project_id);
@@ -241,16 +283,19 @@ export const tasksApi = {
       query = query.eq('status', filters.status);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await withTimeout(query, 'load tasks');
     return handle(data, error);
   },
 
   getById: async (id: string) => {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*, project:project_id(*), assignee:assignee_id(*)')
-      .eq('id', id)
-      .single();
+    const { data, error } = await withTimeout(
+      supabase
+        .from('tasks')
+        .select('*, project:project_id(*), assignee:assignee_id(*)')
+        .eq('id', id)
+        .single(),
+      'load task'
+    );
 
     return handle(data, error);
   },
@@ -302,7 +347,8 @@ export const installationsApi = {
     let query = supabase
       .from('installations')
       .select('*, project:project_id(*), assignee:assignee_id(*)')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(LIST_LIMIT);
 
     if (filters.project_id) {
       query = query.eq('project_id', filters.project_id);
@@ -314,16 +360,19 @@ export const installationsApi = {
       query = query.eq('status', filters.status);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await withTimeout(query, 'load installations');
     return handle(data, error);
   },
 
   getById: async (id: string) => {
-    const { data, error } = await supabase
-      .from('installations')
-      .select('*, project:project_id(*), assignee:assignee_id(*)')
-      .eq('id', id)
-      .single();
+    const { data, error } = await withTimeout(
+      supabase
+        .from('installations')
+        .select('*, project:project_id(*), assignee:assignee_id(*)')
+        .eq('id', id)
+        .single(),
+      'load installation'
+    );
 
     const installation = handle(data, error);
 
@@ -387,7 +436,8 @@ export const purchaseRequestsApi = {
     let query = supabase
       .from('purchase_requests')
       .select('*, items:purchase_request_items(*), installation:installation_id(id, title, address), creator:created_by(id, name, email), approved_by_user:approved_by(id, name)')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(LIST_LIMIT);
 
     if (filters.status) {
       query = query.eq('status', filters.status);
@@ -396,16 +446,19 @@ export const purchaseRequestsApi = {
       query = query.eq('created_by', filters.created_by);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await withTimeout(query, 'load purchase requests');
     return handle(data, error);
   },
 
   getById: async (id: string) => {
-    const { data, error } = await supabase
-      .from('purchase_requests')
-      .select('*, items:purchase_request_items(*), installation:installation_id(id, title, address), task:task_id(id, title), creator:created_by(id, name, email), approved_by_user:approved_by(id, name)')
-      .eq('id', id)
-      .single();
+    const { data, error } = await withTimeout(
+      supabase
+        .from('purchase_requests')
+        .select('*, items:purchase_request_items(*), installation:installation_id(id, title, address), task:task_id(id, title), creator:created_by(id, name, email), approved_by_user:approved_by(id, name)')
+        .eq('id', id)
+        .single(),
+      'load purchase request'
+    );
 
     return handle(data, error);
   },

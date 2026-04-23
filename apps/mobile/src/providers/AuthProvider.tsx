@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { authApi, usersApi, supabase } from '@/src/lib/supabase';
+import { authApi, usersApi, supabase, withTimeout } from '@/src/lib/supabase';
 
-// Роли приложения (как в веб-версии)
 export type UserRole = 'worker' | 'engineer' | 'manager' | 'deputy_head' | 'admin' | 'support';
 
 export const ROLES = {
@@ -32,7 +31,6 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<any>;
   register: (email: string, password: string, name: string, role: string) => Promise<any>;
   logout: () => Promise<void>;
-  // Проверки ролей (как в веб-приложении)
   isWorker: boolean;
   isEngineer: boolean;
   isManager: boolean;
@@ -47,6 +45,15 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const fallbackName = '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c';
+
+const fallbackUser = (authUser: { id: string; email?: string | null }): User => ({
+  id: authUser.id,
+  auth_user_id: authUser.id,
+  email: authUser.email || '',
+  name: authUser.email?.split('@')[0] || fallbackName,
+  role: 'worker',
+});
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -61,52 +68,49 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
-    const init = async () => {
-      const { data: { session: s } } = await supabase.auth.getSession();
-      setSession(s);
 
-      if (s?.user) {
-        try {
-          const data = await authApi.getMe();
-          setUser(data.user as User);
-          usersApi.heartbeat();
-        } catch (e) {
-          console.error('Error getting user profile:', e);
-          // Создаем минимальный профиль из auth пользователя
-          setUser({
-            id: s.user.id,
-            auth_user_id: s.user.id,
-            email: s.user.email || '',
-            name: s.user.email?.split('@')[0] || 'Пользователь',
-            role: 'worker'
-          });
-        }
-      }
-      if (mounted) setLoading(false);
-    };
-    init();
-
-    // Подписка на изменения аутентификации
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, s) => {
-      setSession(s);
-      if (!s?.user) { 
-        setUser(null); 
-        return; 
-      }
+    const loadProfile = async (authUser: { id: string; email?: string | null }) => {
       try {
         const data = await authApi.getMe();
+        if (!mounted) return;
         setUser(data.user as User);
         usersApi.heartbeat();
-      } catch (e) {
-        console.error('Error getting user profile on auth change:', e);
-        setUser({
-          id: s.user.id,
-          auth_user_id: s.user.id,
-          email: s.user.email || '',
-          name: s.user.email?.split('@')[0] || 'Пользователь',
-          role: 'worker'
-        });
+      } catch (error) {
+        console.error('Error getting user profile:', error);
+        if (!mounted) return;
+        setUser(fallbackUser(authUser));
       }
+    };
+
+    const init = async () => {
+      try {
+        const { data } = await withTimeout(supabase.auth.getSession(), 'restore session', 5000);
+        if (!mounted) return;
+
+        setSession(data.session);
+        if (data.session?.user) {
+          await loadProfile(data.session.user);
+        }
+      } catch (error) {
+        console.error('Error restoring session:', error);
+        if (mounted) {
+          setSession(null);
+          setUser(null);
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    init();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+      setSession(nextSession);
+      if (!nextSession?.user) {
+        setUser(null);
+        return;
+      }
+      await loadProfile(nextSession.user);
     });
 
     return () => {
@@ -124,9 +128,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const register = async (email: string, password: string, name: string, role: string) => {
-    // Проверка на запрещённые роли (как в веб-приложении)
     if (['manager', 'deputy_head', 'admin', 'support'].includes(role)) {
-      throw new Error('Регистрация на эту роль невозможна');
+      throw new Error('\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044f \u043d\u0430 \u044d\u0442\u0443 \u0440\u043e\u043b\u044c \u043d\u0435\u0432\u043e\u0437\u043c\u043e\u0436\u043d\u0430');
     }
     const data = await authApi.register(email, password, name, role);
     setUser(data.user as User);
@@ -134,22 +137,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = async () => {
-    try { await usersApi.markOffline(); } catch {}
+    try {
+      await usersApi.markOffline();
+    } catch {}
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
   };
 
-  // Проверка роли
   const hasRole = (roles: UserRole | UserRole[]): boolean => {
     if (!user) return false;
-    if (Array.isArray(roles)) {
-      return roles.includes(user.role as UserRole);
-    }
-    return user.role === roles;
+    return Array.isArray(roles) ? roles.includes(user.role) : user.role === roles;
   };
 
-  // Права пользователя
   const isManagerOrHigher = hasRole([ROLES.MANAGER, ROLES.DEPUTY_HEAD, ROLES.ADMIN]);
   const canCreateTasks = hasRole([ROLES.ENGINEER, ROLES.MANAGER, ROLES.DEPUTY_HEAD, ROLES.ADMIN]);
   const canDeleteTasks = hasRole([ROLES.MANAGER, ROLES.DEPUTY_HEAD, ROLES.ADMIN]);
@@ -157,23 +157,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const canApproveRequests = hasRole([ROLES.MANAGER, ROLES.DEPUTY_HEAD, ROLES.ADMIN]);
 
   return (
-    <AuthContext.Provider value={{
-      user, loading, session,
-      signIn: async (email, password) => { await login(email, password); },
-      signOut: logout,
-      login, register, logout,
-      isWorker: hasRole(ROLES.WORKER),
-      isEngineer: hasRole(ROLES.ENGINEER),
-      isManager: hasRole(ROLES.MANAGER),
-      isDeputyHead: hasRole(ROLES.DEPUTY_HEAD),
-      isAdmin: hasRole(ROLES.ADMIN),
-      isManagerOrHigher,
-      canCreateTasks,
-      canDeleteTasks,
-      canManageUsers,
-      canApproveRequests,
-      hasRole,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        session,
+        signIn: async (email, password) => { await login(email, password); },
+        signOut: logout,
+        login,
+        register,
+        logout,
+        isWorker: hasRole(ROLES.WORKER),
+        isEngineer: hasRole(ROLES.ENGINEER),
+        isManager: hasRole(ROLES.MANAGER),
+        isDeputyHead: hasRole(ROLES.DEPUTY_HEAD),
+        isAdmin: hasRole(ROLES.ADMIN),
+        isManagerOrHigher,
+        canCreateTasks,
+        canDeleteTasks,
+        canManageUsers,
+        canApproveRequests,
+        hasRole,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
