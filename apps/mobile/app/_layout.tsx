@@ -11,6 +11,7 @@ const THEME = {
 
 const RootNavigator = () => {
   const { loading, session, user } = useAuth();
+  const hasActiveSession = Boolean(session?.access_token && session?.user?.id);
 
   if (loading) {
     return (
@@ -23,7 +24,7 @@ const RootNavigator = () => {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {session && user ? (
+      {hasActiveSession && user ? (
         <Stack.Screen name="(app)" />
       ) : (
         <Stack.Screen name="auth" />

@@ -89,6 +89,36 @@ export const useAuth = () => {
   return context;
 };
 
+const isAuthSessionError = (error: unknown) => {
+  if (!error) return false;
+  const typedError = error as { message?: string; name?: string; status?: number; code?: string };
+  const message = (typedError.message || '').toLowerCase();
+  const name = (typedError.name || '').toLowerCase();
+
+  return (
+    typedError.status === 401 ||
+    typedError.code === '401' ||
+    name.includes('auth') ||
+    message.includes('not authenticated') ||
+    message.includes('auth session missing') ||
+    message.includes('invalid jwt') ||
+    message.includes('jwt expired') ||
+    message.includes('refresh token') ||
+    message.includes('session')
+  );
+};
+
+const signOutLocalFirst = async () => {
+  try {
+    await supabase.auth.signOut({ scope: 'local' });
+    return;
+  } catch (localError) {
+    console.warn('Local signOut failed, trying default signOut:', localError);
+  }
+
+  await supabase.auth.signOut();
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<any>(null);
@@ -103,10 +133,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!mounted) return;
         setUser(data.user as User);
         usersApi.heartbeat();
+        return true;
       } catch (error) {
         console.error('Error getting user profile:', error);
-        if (!mounted) return;
-        setUser(fallbackUser(authUser));
+        const shouldClearSession = isAuthSessionError(error);
+        if (shouldClearSession) {
+          try {
+            await signOutLocalFirst();
+          } catch (signOutError) {
+            console.warn('Failed to clear local session after auth error:', signOutError);
+          }
+        }
+        if (!mounted) return false;
+        setUser(null);
+        return false;
       }
     };
 
@@ -123,9 +163,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { data } = sessionResponse;
         if (!mounted) return;
 
-        setSession(data.session);
+        setSession(data.session ?? null);
         if (data.session?.user) {
-          await loadProfile(data.session.user);
+          const profileLoaded = await loadProfile(data.session.user);
+          if (!profileLoaded && mounted) {
+            setSession(null);
+          }
+        } else if (mounted) {
+          setUser(null);
         }
       } catch (error) {
         console.error('Error restoring session:', error);
@@ -141,12 +186,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
-      setSession(nextSession);
+      setSession(nextSession ?? null);
       if (!nextSession?.user) {
         setUser(null);
         return;
       }
-      await loadProfile(nextSession.user);
+      const profileLoaded = await loadProfile(nextSession.user);
+      if (!profileLoaded && mounted) {
+        setSession(null);
+      }
     });
 
     return () => {
@@ -176,9 +224,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await usersApi.markOffline();
     } catch {}
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
+
+    try {
+      await signOutLocalFirst();
+    } catch (error) {
+      console.warn('Sign out error:', error);
+    } finally {
+      setUser(null);
+      setSession(null);
+    }
   };
 
   const hasRole = (roles: UserRole | UserRole[]): boolean => {
