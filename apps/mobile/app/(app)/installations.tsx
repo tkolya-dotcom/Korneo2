@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -49,7 +49,7 @@ const statusColor = (status: string) =>
   }[status] || C.sub);
 
 export default function InstallationsScreen() {
-  const { user, isManager } = useAuth();
+  const { user, isElevatedUser, canCreateInstallations } = useAuth();
   const router = useRouter();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,16 +58,21 @@ export default function InstallationsScreen() {
 
   const load = async () => {
     try {
-      const data = await installationsApi.getAll(isManager || !user?.id ? {} : { assignee_id: user.id });
+      const filters: Record<string, string> | undefined =
+        isElevatedUser || !user?.id
+          ? undefined
+          : { assignee_id: user.id };
+      const data = await installationsApi.getAll(filters);
       setItems(data || []);
     } catch (error) {
       console.error('Failed to load installations:', error);
+      setItems([]);
     }
   };
 
   useEffect(() => {
     load().finally(() => setLoading(false));
-  }, []);
+  }, [isElevatedUser, user?.id]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -101,8 +106,15 @@ export default function InstallationsScreen() {
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <Text style={s.title}>Монтажи</Text>
-        <Text style={s.count}>{filtered.length}</Text>
+        <View>
+          <Text style={s.title}>Монтажи</Text>
+          <Text style={s.count}>{filtered.length}</Text>
+        </View>
+        {canCreateInstallations ? (
+          <TouchableOpacity style={s.createBtn} onPress={() => router.push('/(app)/installation/create' as any)}>
+            <Text style={s.createBtnText}>+ Создать</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <TextInput
@@ -115,7 +127,7 @@ export default function InstallationsScreen() {
 
       <FlatList
         data={filtered}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.accent} />}
         contentContainerStyle={{ padding: 16 }}
         ListEmptyComponent={<Text style={s.empty}>Монтажей нет</Text>}
@@ -136,8 +148,8 @@ export default function InstallationsScreen() {
               </View>
             </View>
             <Text style={s.sub}>{item.project?.name || 'Без проекта'}</Text>
-            {item.address && <Text style={s.sub}>Адрес: {item.address}</Text>}
-            {item.assignee?.name && <Text style={s.sub}>Исполнитель: {item.assignee.name}</Text>}
+            {item.address ? <Text style={s.sub}>Адрес: {item.address}</Text> : null}
+            {item.assignee?.name ? <Text style={s.sub}>Исполнитель: {item.assignee.name}</Text> : null}
           </TouchableOpacity>
         )}
       />
@@ -148,9 +160,24 @@ export default function InstallationsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingTop: 48 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 48,
+  },
   title: { color: C.text, fontSize: 26, fontWeight: '700' },
-  count: { color: C.sub, fontSize: 16 },
+  count: { color: C.sub, fontSize: 14, marginTop: 2 },
+  createBtn: {
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(0,217,255,0.12)',
+  },
+  createBtnText: { color: C.accent, fontSize: 12, fontWeight: '700' },
   search: {
     backgroundColor: C.card,
     color: C.text,
@@ -177,4 +204,3 @@ const s = StyleSheet.create({
   badgeText: { color: '#081018', fontSize: 10, fontWeight: '700' },
   empty: { color: C.sub, textAlign: 'center', marginTop: 60, fontSize: 16 },
 });
-

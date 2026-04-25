@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/src/providers/AuthProvider';
 
 const COLORS = {
@@ -27,7 +28,6 @@ const text = {
   enterName: '\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0438\u043c\u044f',
   unknownError: '\u041d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u0430\u044f \u043e\u0448\u0438\u0431\u043a\u0430',
   logo: '\u041a\u043e\u0440\u043d\u0435\u043e',
-  tagline: '\u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u0441\u0442\u0440\u043e\u0439\u043a\u043e\u0439',
   loginTab: '\u0412\u0445\u043e\u0434',
   registerTab: '\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044f',
   password: '\u041f\u0430\u0440\u043e\u043b\u044c',
@@ -41,13 +41,21 @@ const text = {
 };
 
 export default function AuthScreen() {
-  const { signIn, register } = useAuth();
+  const { signIn, register, user, session } = useAuth();
+  const router = useRouter();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<'worker' | 'engineer'>('worker');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const hasActiveSession = Boolean(session?.access_token || user?.id);
+    if (hasActiveSession) {
+      router.replace('/(app)');
+    }
+  }, [router, session?.access_token, user?.id]);
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -68,7 +76,16 @@ export default function AuthScreen() {
         await register(email.trim(), password, name.trim(), role);
       }
     } catch (e: any) {
-      Alert.alert(text.error, e?.message || text.unknownError);
+      const rawMessage = String(e?.message || text.unknownError);
+      const normalized = rawMessage.toLowerCase();
+      if (normalized.includes('timed out') || normalized.includes('timeout')) {
+        Alert.alert(
+          text.error,
+          '\u0412\u0440\u0435\u043c\u044f \u043e\u0436\u0438\u0434\u0430\u043d\u0438\u044f \u0438\u0441\u0442\u0435\u043a\u043b\u043e. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0441\u0435\u0442\u044c \u0438 \u043f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0435\u0449\u0451 \u0440\u0430\u0437.'
+        );
+      } else {
+        Alert.alert(text.error, rawMessage || text.unknownError);
+      }
     } finally {
       setLoading(false);
     }
@@ -79,7 +96,6 @@ export default function AuthScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.logoBox}>
           <Text style={styles.logo}>{text.logo}</Text>
-          <Text style={styles.tagline}>{text.tagline}</Text>
         </View>
 
         <View style={styles.card}>
@@ -146,7 +162,6 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   logoBox: { alignItems: 'center', marginBottom: 32 },
   logo: { color: COLORS.accent, fontSize: 40, fontWeight: '800', letterSpacing: 1 },
-  tagline: { color: COLORS.sub, fontSize: 14, marginTop: 6 },
   card: { backgroundColor: COLORS.card, borderRadius: 16, padding: 24 },
   tabs: { flexDirection: 'row', marginBottom: 20, backgroundColor: '#0A0A0F', borderRadius: 10, padding: 4 },
   tab: { flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
@@ -173,4 +188,3 @@ const styles = StyleSheet.create({
   btnDisabled: { opacity: 0.6 },
   btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
-

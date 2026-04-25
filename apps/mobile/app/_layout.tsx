@@ -1,9 +1,10 @@
-﻿import { Stack } from 'expo-router';
-import { ActivityIndicator, View, Text, StyleSheet } from 'react-native';
+import { useEffect } from 'react';
+import { Stack } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
 import { AuthProvider, useAuth } from '@/src/providers/AuthProvider';
-import { COLORS } from '@/src/theme/colors';
+import { ensureDeviceRuntimeReady } from '@/src/lib/deviceRuntime';
+import LoadingVideo from '@/src/components/LoadingVideo';
 
-// Тема Cyberpunk
 const THEME = {
   bg: '#0A0A0F',
   accent: '#00D9FF',
@@ -11,24 +12,27 @@ const THEME = {
 
 const RootNavigator = () => {
   const { loading, session, user } = useAuth();
-  const hasActiveSession = Boolean(session?.access_token && session?.user?.id);
+  const hasActiveSession = Boolean(session?.access_token || user?.id);
+
+  useEffect(() => {
+    if (!hasActiveSession) {
+      return;
+    }
+    void ensureDeviceRuntimeReady();
+  }, [hasActiveSession, user?.id]);
 
   if (loading) {
     return (
       <View style={styles.loading}>
-        <Text style={styles.logo}>КОРНЕО</Text>
-        <ActivityIndicator color={THEME.accent} size="large" style={{ marginTop: 20 }} />
+        <Text style={styles.logo}>{'\u041a\u043e\u0440\u043d\u0435\u043e'}</Text>
+        <LoadingVideo style={{ marginTop: 10 }} size={220} />
       </View>
     );
   }
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {hasActiveSession && user ? (
-        <Stack.Screen name="(app)" />
-      ) : (
-        <Stack.Screen name="auth" />
-      )}
+      {hasActiveSession ? <Stack.Screen name="(app)" /> : <Stack.Screen name="auth" />}
     </Stack>
   );
 };

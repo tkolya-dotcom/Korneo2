@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { chatApi, jobsApi } from '@/src/lib/supabase';
 import { useAuth } from '@/src/providers/AuthProvider';
 
@@ -229,6 +230,7 @@ export default function MessengerScreen() {
   const [contactQuery, setContactQuery] = useState('');
   const [contacts, setContacts] = useState<any[]>([]);
   const [openingChatUserId, setOpeningChatUserId] = useState('');
+  const swipeRefs = useRef<Record<string, Swipeable | null>>({});
 
   const loadChats = useCallback(async () => {
     try {
@@ -487,6 +489,39 @@ export default function MessengerScreen() {
     }
   };
 
+  const handleSwipeMute = async (chat: any) => {
+    await toggleMuted(chat);
+    swipeRefs.current[chat.chat_id]?.close();
+  };
+
+  const openChatFilterMenu = () => {
+    Alert.alert(
+      'Фильтр чатов',
+      'Выберите тип',
+      [
+        ...(['all', 'private', 'group'] as ChatFilter[]).map((filter) => ({
+          text: FILTER_LABEL[filter],
+          onPress: () => setActiveFilter(filter),
+        })),
+        { text: 'Отмена', style: 'cancel' as const },
+      ]
+    );
+  };
+
+  const openMapFilterMenu = () => {
+    Alert.alert(
+      'Фильтр работ',
+      'Выберите статус',
+      [
+        ...(['all', 'active', 'done'] as JobMapFilter[]).map((filter) => ({
+          text: MAP_FILTER_LABEL[filter],
+          onPress: () => setMapFilter(filter),
+        })),
+        { text: 'Отмена', style: 'cancel' as const },
+      ]
+    );
+  };
+
   const openActions = (chat: any) => {
     Alert.alert(chat.chat_name || 'Чат', 'Действия', [
       {
@@ -593,18 +628,9 @@ export default function MessengerScreen() {
       {activeTab === 'chats' ? (
         <>
           <View style={s.filtersRow}>
-            {(['all', 'private', 'group'] as ChatFilter[]).map((filter) => {
-              const active = activeFilter === filter;
-              return (
-                <TouchableOpacity
-                  key={filter}
-                  style={[s.filterChip, active && s.filterChipActive]}
-                  onPress={() => setActiveFilter(filter)}
-                >
-                  <Text style={[s.filterText, active && s.filterTextActive]}>{FILTER_LABEL[filter]}</Text>
-                </TouchableOpacity>
-              );
-            })}
+            <TouchableOpacity style={s.selectFilterBtn} onPress={openChatFilterMenu}>
+              <Text style={s.selectFilterText}>Тип чатов: {FILTER_LABEL[activeFilter]} ▾</Text>
+            </TouchableOpacity>
           </View>
 
           <FlatList
@@ -621,50 +647,67 @@ export default function MessengerScreen() {
               const ticks = ownLast ? (unreadCount === 0 ? '✓✓' : '✓') : '';
 
               return (
-                <TouchableOpacity
-                  style={s.card}
-                  onPress={() => openChat(item)}
-                  onLongPress={() => openActions(item)}
-                  delayLongPress={180}
+                <Swipeable
+                  ref={(ref: Swipeable | null) => {
+                    swipeRefs.current[item.chat_id] = ref;
+                  }}
+                  renderLeftActions={() => (
+                    <View style={s.swipeActionLeft}>
+                      <Text style={s.swipeActionText}>{item.muted ? 'Включить звук' : 'Без звука'}</Text>
+                    </View>
+                  )}
+                  overshootLeft={false}
+                  onSwipeableOpen={(direction: 'left' | 'right') => {
+                    if (direction === 'right') {
+                      void handleSwipeMute(item);
+                    }
+                  }}
                 >
-                  <View style={s.row}>
-                    <View style={s.avatar}>
-                      <Text style={s.avatarText}>{(item.chat_name || '?').slice(0, 1).toUpperCase()}</Text>
-                    </View>
+                  <TouchableOpacity
+                    style={s.card}
+                    onPress={() => openChat(item)}
+                    onLongPress={() => openActions(item)}
+                    delayLongPress={180}
+                  >
+                    <View style={s.row}>
+                      <View style={s.avatar}>
+                        <Text style={s.avatarText}>{(item.chat_name || '?').slice(0, 1).toUpperCase()}</Text>
+                      </View>
 
-                    <View style={{ flex: 1 }}>
-                      <View style={s.nameRow}>
-                        <Text style={s.name} numberOfLines={1}>
-                          {item.chat_name}
-                        </Text>
-                        <View style={s.timeRow}>
-                          {ticks ? <Text style={[s.ticks, unreadCount === 0 && s.ticksRead]}>{ticks}</Text> : null}
-                          <Text style={s.time}>{formatTime(item.last_message?.created_at)}</Text>
+                      <View style={{ flex: 1 }}>
+                        <View style={s.nameRow}>
+                          <Text style={s.name} numberOfLines={1}>
+                            {item.chat_name}
+                          </Text>
+                          <View style={s.timeRow}>
+                            {ticks ? <Text style={[s.ticks, unreadCount === 0 && s.ticksRead]}>{ticks}</Text> : null}
+                            <Text style={s.time}>{formatTime(item.last_message?.created_at)}</Text>
+                          </View>
                         </View>
+
+                        <Text style={s.preview} numberOfLines={1}>
+                          {item.last_message?.text ||
+                            (item.chat_type === 'group' ? 'Групповой чат' : 'Личный чат')}
+                        </Text>
+
+                        <Text style={s.meta}>
+                          {item.chat_type === 'group' ? 'Группа' : 'Личный'} • {item.members_count} участ.
+                        </Text>
                       </View>
 
-                      <Text style={s.preview} numberOfLines={1}>
-                        {item.last_message?.text ||
-                          (item.chat_type === 'group' ? 'Групповой чат' : 'Личный чат')}
-                      </Text>
-
-                      <Text style={s.meta}>
-                        {item.chat_type === 'group' ? 'Группа' : 'Личный'} • {item.members_count} участ.
-                      </Text>
+                      {unreadCount > 0 ? (
+                        <View style={[s.unreadBadge, item.muted && s.unreadBadgeMuted]}>
+                          <Text style={s.unreadBadgeText}>{compactCount(unreadCount)}</Text>
+                        </View>
+                      ) : (
+                        <View style={s.iconsCol}>
+                          {item.pinned ? <Text style={s.pin}>📌</Text> : null}
+                          {item.muted ? <Text style={s.muted}>🔕</Text> : null}
+                        </View>
+                      )}
                     </View>
-
-                    {unreadCount > 0 ? (
-                      <View style={[s.unreadBadge, item.muted && s.unreadBadgeMuted]}>
-                        <Text style={s.unreadBadgeText}>{compactCount(unreadCount)}</Text>
-                      </View>
-                    ) : (
-                      <View style={s.iconsCol}>
-                        {item.pinned ? <Text style={s.pin}>📌</Text> : null}
-                        {item.muted ? <Text style={s.muted}>🔕</Text> : null}
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                </Swipeable>
               );
             }}
           />
@@ -674,18 +717,9 @@ export default function MessengerScreen() {
       {activeTab === 'map' ? (
         <>
           <View style={s.filtersRow}>
-            {(['all', 'active', 'done'] as JobMapFilter[]).map((filter) => {
-              const active = mapFilter === filter;
-              return (
-                <TouchableOpacity
-                  key={filter}
-                  style={[s.filterChip, active && s.filterChipActive]}
-                  onPress={() => setMapFilter(filter)}
-                >
-                  <Text style={[s.filterText, active && s.filterTextActive]}>{MAP_FILTER_LABEL[filter]}</Text>
-                </TouchableOpacity>
-              );
-            })}
+            <TouchableOpacity style={s.selectFilterBtn} onPress={openMapFilterMenu}>
+              <Text style={s.selectFilterText}>Статус работ: {MAP_FILTER_LABEL[mapFilter]} ▾</Text>
+            </TouchableOpacity>
           </View>
 
           <FlatList
@@ -923,6 +957,15 @@ const s = StyleSheet.create({
     borderColor: C.border,
   },
   filtersRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 4 },
+  selectFilterBtn: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: C.card,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  selectFilterText: { color: C.text, fontSize: 12, fontWeight: '600' },
   filterChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -934,6 +977,18 @@ const s = StyleSheet.create({
   filterChipActive: { borderColor: C.accent, backgroundColor: 'rgba(0,217,255,0.16)' },
   filterText: { color: C.sub, fontSize: 12, fontWeight: '600' },
   filterTextActive: { color: C.accent },
+  swipeActionLeft: {
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingLeft: 16,
+    marginBottom: 10,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 217, 255, 0.14)',
+    borderWidth: 1,
+    borderColor: C.border,
+    minWidth: 150,
+  },
+  swipeActionText: { color: C.accent, fontSize: 12, fontWeight: '700' },
   card: {
     backgroundColor: C.card,
     borderRadius: 14,

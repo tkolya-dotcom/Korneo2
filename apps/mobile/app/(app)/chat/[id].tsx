@@ -15,9 +15,12 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { chatApi, jobsApi } from '@/src/lib/supabase';
+import { searchAddressSuggestions } from '@/src/lib/addressSearch';
+import AddressSuggestionCard from '@/src/components/AddressSuggestionCard';
 
 const C = {
   bg: '#0A0A0F',
@@ -34,6 +37,7 @@ const C = {
 };
 
 const DEFAULT_MESSAGE_WINDOW = 250;
+const QUICK_REACTIONS = ['👍', '🔥', '✅', '❤️', '😂'];
 
 const formatTime = (value?: string) => {
   if (!value) return '';
@@ -43,9 +47,9 @@ const formatTime = (value?: string) => {
 };
 
 const formatDateTime = (value?: string | null) => {
-  if (!value) return '—';
+  if (!value) return '\u2014';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) return '\u2014';
   return date.toLocaleString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
@@ -57,7 +61,10 @@ const formatDateTime = (value?: string | null) => {
 const getReadState = (message: any, membersCount: number) => {
   const receipts = Array.isArray(message.read_receipts) ? message.read_receipts : [];
   const senderId = message.author_id || message.user_id || message.sender_id;
-  const otherReceipts = receipts.filter((receipt: any) => receipt.user_id !== senderId);
+  const otherReceipts = receipts.filter((receipt: any) => {
+    const receiptUserId = receipt.user_id || receipt.reader_id || '';
+    return receiptUserId && receiptUserId !== senderId;
+  });
   const required = Math.max(membersCount - 1, 1);
   return {
     ticks: otherReceipts.length >= required ? '✓✓' : '✓',
@@ -75,10 +82,10 @@ const calcHoursDiff = (from?: string | null, to?: string | null) => {
 };
 
 const jobStatusLabel = (status?: string | null) => {
-  if (status === 'done') return 'Завершено';
-  if (status === 'active') return 'В работе';
-  if (status === 'pending') return 'Не начато';
-  return status || '—';
+  if (status === 'done') return '\u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e';
+  if (status === 'active') return '\u0412 \u0440\u0430\u0431\u043e\u0442\u0435';
+  if (status === 'pending') return '\u041d\u0435 \u043d\u0430\u0447\u0430\u0442\u043e';
+  return status || '\u2014';
 };
 
 const jobStatusColor = (status?: string | null) => {
@@ -89,7 +96,7 @@ const jobStatusColor = (status?: string | null) => {
 
 const parseAddressFromMessage = (message: any) => {
   const text = typeof message?.text === 'string' ? message.text : '';
-  const marker = 'Начал работу по адресу:';
+  const marker = '\u041d\u0430\u0447\u0430\u043b \u0440\u0430\u0431\u043e\u0442\u0443 \u043f\u043e \u0430\u0434\u0440\u0435\u0441\u0443:';
   const index = text.indexOf(marker);
   if (index >= 0) {
     return text.slice(index + marker.length).trim();
@@ -103,6 +110,8 @@ export default function ChatDetailScreen() {
     name?: string;
     members_count?: string;
   }>();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
@@ -120,6 +129,7 @@ export default function ChatDetailScreen() {
   const [districtFilter, setDistrictFilter] = useState('');
   const [plannedHours, setPlannedHours] = useState('4');
   const [startingAddressKey, setStartingAddressKey] = useState('');
+  const [reactingMessageId, setReactingMessageId] = useState('');
 
   const scrollRef = useRef<ScrollView>(null);
 
@@ -128,21 +138,37 @@ export default function ChatDetailScreen() {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 2;
   }, [members_count]);
 
+  const closeStartJobModalAndBack = useCallback(() => {
+    setStartJobVisible(false);
+    requestAnimationFrame(() => {
+      router.back();
+    });
+  }, [router]);
+
   const loadMessagesAndJobs = useCallback(async () => {
     if (!id) return;
-    try {
-      const [messagesData, jobsData] = await Promise.all([
-        chatApi.getMessages(id),
-        jobsApi.getAll({ chat_id: id }),
-      ]);
-      setMessages((messagesData || []).slice(-DEFAULT_MESSAGE_WINDOW));
-      setJobs(jobsData || []);
-      await chatApi.markChatAsRead(id);
+    const [messagesResult, jobsResult] = await Promise.allSettled([
+      chatApi.getMessages(id),
+      jobsApi.getAll({ chat_id: id }),
+    ]);
+
+    if (messagesResult.status === 'fulfilled') {
+      setMessages((messagesResult.value || []).slice(-DEFAULT_MESSAGE_WINDOW));
+      await chatApi.markChatAsRead(id).catch((error) => {
+        console.warn('Failed to mark chat as read:', error);
+      });
       requestAnimationFrame(() => {
         scrollRef.current?.scrollToEnd({ animated: false });
       });
-    } catch (error) {
-      console.error('Failed to load chat data:', error);
+    } else {
+      console.error('Failed to load chat messages:', messagesResult.reason);
+    }
+
+    if (jobsResult.status === 'fulfilled') {
+      setJobs(jobsResult.value || []);
+    } else {
+      console.warn('Failed to load chat jobs:', jobsResult.reason);
+      setJobs([]);
     }
   }, [id]);
 
@@ -203,6 +229,26 @@ export default function ChatDetailScreen() {
     setRefreshing(false);
   };
 
+  const openUserProfile = useCallback(
+    (targetUserId?: string | null) => {
+      const normalized = String(targetUserId || '').trim();
+      if (!normalized) {
+        return;
+      }
+
+      if (user?.id && normalized === String(user.id)) {
+        router.push('/(app)/profile' as any);
+        return;
+      }
+
+      router.push({
+        pathname: '/(app)/user/[id]',
+        params: { id: normalized },
+      } as any);
+    },
+    [router, user?.id]
+  );
+
   const send = async () => {
     const trimmed = text.trim();
     if (!trimmed || sending || !id) return;
@@ -222,6 +268,90 @@ export default function ChatDetailScreen() {
     }
   };
 
+  const toggleReactionForMessage = async (messageId: string, reaction: string) => {
+    if (!messageId) return;
+    setReactingMessageId(messageId);
+    try {
+      await chatApi.toggleReaction(messageId, reaction);
+      await loadMessagesAndJobs();
+    } catch (error) {
+      Alert.alert('Ошибка', error instanceof Error ? error.message : 'Не удалось обновить реакцию');
+    } finally {
+      setReactingMessageId('');
+    }
+  };
+
+  const openReactionMenu = (message: any) => {
+    Alert.alert(
+      'Добавить реакцию',
+      'Выберите эмодзи',
+      [
+        ...QUICK_REACTIONS.map((emoji) => ({
+          text: emoji,
+          onPress: () => {
+            void toggleReactionForMessage(String(message.id), emoji);
+          },
+        })),
+        { text: 'Отмена', style: 'cancel' as const },
+      ]
+    );
+  };
+
+  const deleteForMe = async (messageId: string) => {
+    if (!id) return;
+    try {
+      await chatApi.hideMessageForMe(id, messageId);
+      setMessages((prev) => prev.filter((message) => String(message.id) !== messageId));
+    } catch (error) {
+      Alert.alert('Ошибка', error instanceof Error ? error.message : 'Не удалось скрыть сообщение');
+    }
+  };
+
+  const deleteForAll = async (messageId: string) => {
+    if (!id) return;
+    try {
+      await chatApi.deleteMessageForAll(id, messageId);
+      await loadMessagesAndJobs();
+    } catch (error) {
+      Alert.alert('Ошибка', error instanceof Error ? error.message : 'Не удалось удалить сообщение');
+    }
+  };
+
+  const openMessageActions = (message: any) => {
+    const messageId = String(message.id || '');
+    if (!messageId) return;
+    const isOwn = Boolean(user?.id) && message.author_id === user?.id;
+
+    Alert.alert(
+      'Действия с сообщением',
+      'Выберите действие',
+      [
+        {
+          text: 'Добавить реакцию',
+          onPress: () => openReactionMenu(message),
+        },
+        {
+          text: 'Удалить у себя',
+          onPress: () => {
+            void deleteForMe(messageId);
+          },
+        },
+        ...(isOwn
+          ? [
+              {
+                text: 'Удалить у всех',
+                style: 'destructive' as const,
+                onPress: () => {
+                  void deleteForAll(messageId);
+                },
+              },
+            ]
+          : []),
+        { text: 'Отмена', style: 'cancel' as const },
+      ]
+    );
+  };
+
   const openStartJobModal = () => {
     setAddressQuery('');
     setDistrictFilter('');
@@ -230,6 +360,24 @@ export default function ChatDetailScreen() {
     if (!addresses.length) {
       void loadAddresses();
     }
+  };
+
+  const openDistrictPicker = () => {
+    Alert.alert(
+      'Выбор района',
+      'Фильтр адресов',
+      [
+        {
+          text: 'Все районы',
+          onPress: () => setDistrictFilter(''),
+        },
+        ...districts.map((district) => ({
+          text: district,
+          onPress: () => setDistrictFilter(district),
+        })),
+        { text: 'Отмена', style: 'cancel' as const },
+      ]
+    );
   };
 
   const startJob = async (addressItem: any) => {
@@ -328,20 +476,10 @@ export default function ChatDetailScreen() {
   );
 
   const filteredAddresses = useMemo(() => {
-    const query = addressQuery.trim().toLowerCase();
-    return addresses.filter((item) => {
-      if (districtFilter && item.district !== districtFilter) {
-        return false;
-      }
-      if (!query) {
-        return true;
-      }
-      const haystack = [item.address, item.district, item.sk_name, item.servisnyy_id]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(query);
-    });
+    const districtScoped = districtFilter
+      ? addresses.filter((item) => String(item.district || '') === districtFilter)
+      : addresses;
+    return searchAddressSuggestions(districtScoped, addressQuery, 200);
   }, [addresses, addressQuery, districtFilter]);
 
   if (loading) {
@@ -359,6 +497,9 @@ export default function ChatDetailScreen() {
       keyboardVerticalOffset={90}
     >
       <View style={s.header}>
+        <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
+          <Text style={s.backBtnText}>←</Text>
+        </TouchableOpacity>
         <Text style={s.title} numberOfLines={1}>
           {name || 'Чат'}
         </Text>
@@ -391,7 +532,7 @@ export default function ChatDetailScreen() {
           <Text style={s.empty}>Сообщений пока нет</Text>
         ) : (
           messages.map((message) => {
-            const isOwn = Boolean(user?.id) && message.author_id === user?.id;
+            const isOwn = Boolean(user?.id) && String(message.author_id || '') === String(user?.id || '');
             const readState = getReadState(message, membersCount);
             const isJobMessage = message.type === 'job' || Boolean(message.job_id);
             const job = message.job || null;
@@ -399,9 +540,16 @@ export default function ChatDetailScreen() {
 
             return (
               <View key={message.id} style={[s.bubbleRow, isOwn ? s.bubbleRowOwn : s.bubbleRowOther]}>
-                <View style={[s.bubble, isOwn ? s.bubbleOwn : s.bubbleOther]}>
+                <TouchableOpacity
+                  style={[s.bubble, isOwn ? s.bubbleOwn : s.bubbleOther]}
+                  onLongPress={() => openMessageActions(message)}
+                  delayLongPress={180}
+                  activeOpacity={0.92}
+                >
                   {!isOwn ? (
-                    <Text style={s.senderName}>{message.sender?.name || 'Пользователь'}</Text>
+                    <Text style={s.senderName} onPress={() => openUserProfile(message.author_id)}>
+                      {message.sender?.name || 'Пользователь'}
+                    </Text>
                   ) : null}
 
                   {isJobMessage ? (
@@ -468,7 +616,25 @@ export default function ChatDetailScreen() {
                       <Text style={[s.ticks, readState.isRead && s.ticksRead]}>{readState.ticks}</Text>
                     ) : null}
                   </View>
-                </View>
+                  {Array.isArray(message.reactions) && message.reactions.length > 0 ? (
+                    <View style={s.reactionsRow}>
+                      {message.reactions.map((reaction: any) => (
+                        <TouchableOpacity
+                          key={`${message.id}-${reaction.emoji}`}
+                          style={[s.reactionChip, reaction.mine && s.reactionChipMine]}
+                          disabled={reactingMessageId === String(message.id)}
+                          onPress={() => {
+                            void toggleReactionForMessage(String(message.id), String(reaction.emoji));
+                          }}
+                        >
+                          <Text style={[s.reactionText, reaction.mine && s.reactionTextMine]}>
+                            {reaction.emoji} {reaction.count}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  ) : null}
+                </TouchableOpacity>
               </View>
             );
           })
@@ -489,93 +655,76 @@ export default function ChatDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      <Modal visible={startJobVisible} transparent animationType="slide" onRequestClose={() => setStartJobVisible(false)}>
+      <Modal
+        visible={startJobVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={closeStartJobModalAndBack}
+      >
         <View style={s.modalBackdrop}>
-          <View style={s.modalSheet}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Выбор адреса для работы</Text>
-              <TouchableOpacity onPress={() => setStartJobVisible(false)}>
-                <Text style={s.modalClose}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={s.modalBody}>
-              <TextInput
-                value={addressQuery}
-                onChangeText={setAddressQuery}
-                style={s.modalSearch}
-                placeholder="Поиск по адресу"
-                placeholderTextColor={C.sub}
-              />
-
-              <View style={s.durationRow}>
-                <Text style={s.durationLabel}>Плановое время (часы)</Text>
-                <TextInput
-                  value={plannedHours}
-                  onChangeText={setPlannedHours}
-                  keyboardType="numeric"
-                  style={s.durationInput}
-                />
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.modalKeyboard}>
+            <View style={[s.modalSheet, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+              <View style={s.modalHeader}>
+                <Text style={s.modalTitle}>Выбор адреса для работы</Text>
+                <TouchableOpacity onPress={closeStartJobModalAndBack}>
+                  <Text style={s.modalClose}>✕</Text>
+                </TouchableOpacity>
               </View>
 
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.districtRow}>
-                <TouchableOpacity
-                  style={[s.districtChip, !districtFilter && s.districtChipActive]}
-                  onPress={() => setDistrictFilter('')}
-                >
-                  <Text style={[s.districtChipText, !districtFilter && s.districtChipTextActive]}>Все районы</Text>
-                </TouchableOpacity>
-                {districts.map((district) => {
-                  const active = districtFilter === district;
-                  return (
-                    <TouchableOpacity
-                      key={district}
-                      style={[s.districtChip, active && s.districtChipActive]}
-                      onPress={() => setDistrictFilter(district)}
-                    >
-                      <Text style={[s.districtChipText, active && s.districtChipTextActive]}>{district}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-
-              {addressesLoading ? (
-                <View style={s.modalLoading}>
-                  <ActivityIndicator color={C.accent} />
-                </View>
-              ) : (
-                <FlatList
-                  data={filteredAddresses.slice(0, 120)}
-                  keyExtractor={(item) => `${item.source}:${item.source_id}`}
-                  contentContainerStyle={s.addressList}
-                  ListEmptyComponent={<Text style={s.emptySmall}>Адреса не найдены</Text>}
-                  renderItem={({ item }) => {
-                    const key = `${item.source}:${item.source_id}`;
-                    const busy = startingAddressKey === key;
-                    return (
-                      <TouchableOpacity
-                        style={s.addressRow}
-                        onPress={() => {
-                          void startJob(item);
-                        }}
-                        disabled={busy}
-                      >
-                        <View style={{ flex: 1 }}>
-                          <Text style={s.addressTitle}>{item.address}</Text>
-                          <Text style={s.addressMeta}>
-                            {(item.district || 'Район не указан') +
-                              (item.sk_name ? ` • ${item.sk_name}` : '') +
-                              (item.sk_count ? ` • ${item.sk_count} СК` : '')}
-                          </Text>
-                        </View>
-                        <Text style={s.addressAction}>{busy ? '...' : 'Старт'}</Text>
-                      </TouchableOpacity>
-                    );
-                  }}
+              <View style={s.modalBody}>
+                <TextInput
+                  value={addressQuery}
+                  onChangeText={setAddressQuery}
+                  style={s.modalSearch}
+                  placeholder="Поиск по адресу"
+                  placeholderTextColor={C.sub}
                 />
-              )}
+
+                <View style={s.durationRow}>
+                  <Text style={s.durationLabel}>Плановое время (часы)</Text>
+                  <TextInput
+                    value={plannedHours}
+                    onChangeText={setPlannedHours}
+                    keyboardType="numeric"
+                    style={s.durationInput}
+                  />
+                </View>
+
+                <TouchableOpacity style={s.selectDistrictBtn} onPress={openDistrictPicker}>
+                  <Text style={s.selectDistrictText}>
+                    {districtFilter ? `Район: ${districtFilter}` : 'Район: Все районы'} ▾
+                  </Text>
+                </TouchableOpacity>
+
+                {addressesLoading ? (
+                  <View style={s.modalLoading}>
+                    <ActivityIndicator color={C.accent} />
+                  </View>
+                ) : (
+                  <FlatList
+                    data={filteredAddresses.slice(0, 120)}
+                    keyExtractor={(item) => `${item.source}:${item.source_id}`}
+                    contentContainerStyle={[s.addressList, { paddingBottom: insets.bottom + 18 }]}
+                    ListEmptyComponent={<Text style={s.emptySmall}>Адреса не найдены</Text>}
+                    renderItem={({ item }) => {
+                      const key = `${item.source}:${item.source_id}`;
+                      const busy = startingAddressKey === key;
+                      return (
+                        <AddressSuggestionCard
+                          item={item}
+                          disabled={busy}
+                          actionLabel={'Старт'}
+                          onPress={() => {
+                            void startJob(item);
+                          }}
+                        />
+                      );
+                    }}
+                  />
+                )}
+              </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </KeyboardAvoidingView>
@@ -595,6 +744,17 @@ const s = StyleSheet.create({
     borderBottomColor: C.border,
     backgroundColor: C.card,
   },
+  backBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: C.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  backBtnText: { color: C.accent, fontSize: 16, fontWeight: '700' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { color: C.text, fontSize: 18, fontWeight: '700', flex: 1, marginRight: 10 },
   count: { color: C.sub, fontSize: 12 },
@@ -629,12 +789,30 @@ const s = StyleSheet.create({
   },
   bubbleOwn: { backgroundColor: C.own, borderColor: C.border },
   bubbleOther: { backgroundColor: C.other, borderColor: 'rgba(255,255,255,0.08)' },
-  senderName: { color: C.accent, fontSize: 11, marginBottom: 4, fontWeight: '600' },
+  senderName: {
+    color: C.accent,
+    fontSize: 11,
+    marginBottom: 4,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
   bubbleText: { color: C.text, fontSize: 14, lineHeight: 20 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-end', marginTop: 6 },
   bubbleTime: { color: C.sub, fontSize: 10 },
   ticks: { color: C.sub, fontSize: 11, fontWeight: '700' },
   ticksRead: { color: C.accent },
+  reactionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  reactionChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  reactionChipMine: { borderColor: C.accent, backgroundColor: 'rgba(0,217,255,0.16)' },
+  reactionText: { color: C.sub, fontSize: 11, fontWeight: '600' },
+  reactionTextMine: { color: C.accent },
   empty: { color: C.sub, textAlign: 'center', marginTop: 40, fontSize: 14 },
   jobMessageWrap: { gap: 6 },
   jobTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
@@ -690,13 +868,15 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.68)',
     justifyContent: 'flex-end',
   },
+  modalKeyboard: { width: '100%' },
   modalSheet: {
     backgroundColor: C.card,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     borderWidth: 1,
     borderColor: C.border,
-    maxHeight: '84%',
+    maxHeight: '92%',
+    minHeight: '56%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -740,18 +920,16 @@ const s = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  districtRow: { gap: 8, paddingBottom: 8 },
-  districtChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
+  selectDistrictBtn: {
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: C.border,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
   },
-  districtChipActive: { borderColor: C.accent, backgroundColor: 'rgba(0,217,255,0.15)' },
-  districtChipText: { color: C.sub, fontSize: 11, fontWeight: '600' },
-  districtChipTextActive: { color: C.accent },
+  selectDistrictText: { color: C.text, fontSize: 12, fontWeight: '600' },
   modalLoading: { paddingVertical: 20, alignItems: 'center' },
   addressList: { paddingBottom: 30 },
   addressRow: {

@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/src/providers/AuthProvider';
 import { tasksApi, installationsApi } from '@/src/lib/supabase';
 
 const C = {
@@ -14,6 +15,7 @@ const C = {
 
 export default function ArchiveScreen() {
   const router = useRouter();
+  const { canViewArchive } = useAuth();
   const [tasks, setTasks] = useState<any[]>([]);
   const [installations, setInstallations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +23,12 @@ export default function ArchiveScreen() {
   const [tab, setTab] = useState<'tasks' | 'installations'>('tasks');
 
   const load = async () => {
+    if (!canViewArchive) {
+      setTasks([]);
+      setInstallations([]);
+      return;
+    }
+
     try {
       const [t, i] = await Promise.all([
         tasksApi.getArchived().catch(() => []),
@@ -31,12 +39,19 @@ export default function ArchiveScreen() {
     } catch (e) { console.error(e); }
   };
 
-  useEffect(() => { load().finally(() => setLoading(false)); }, []);
+  useEffect(() => { load().finally(() => setLoading(false)); }, [canViewArchive]);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
   const data = tab === 'tasks' ? tasks : installations;
 
   if (loading) return <View style={s.center}><ActivityIndicator color={C.accent} size="large" /></View>;
+  if (!canViewArchive) {
+    return (
+      <View style={s.center}>
+        <Text style={s.empty}>Недостаточно прав для просмотра архива</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={s.container}>

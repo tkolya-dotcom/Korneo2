@@ -1,14 +1,15 @@
 {
   "expo": {
-    "name": "Korneo",
+    "name": "Корнео",
     "slug": "korneo-mobile",
     "version": "1.0.0",
     "scheme": "korneo",
+    "icon": "./assets/icon.png",
     "splash": {
       "resizeMode": "contain",
       "backgroundColor": "#0f172a"
     },
-    "orientation": "portrait",
+    "orientation": "default",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0f172a",
     "plugins": [
@@ -26,22 +27,33 @@
           }
         }
       ],
+      "expo-notifications",
       "expo-router"
     ],
     "android": {
       "package": "com.tkolya.korneo",
       "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f172a"
+      },
+      "notification": {
+        "icon": "./assets/notification-icon.png",
+        "color": "#00D9FF"
+      },
       "permissions": [
-        "android.permission.INTERNET"
+        "android.permission.INTERNET",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.VIBRATE"
       ]
     },
     "ios": {
       "bundleIdentifier": "com.tkolya.korneo",
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": [
-          "remote-notification"
-        ]
+        "UIBackgroundModes": ["remote-notification"]
       }
     },
     "experiments": {

@@ -1,18 +1,19 @@
 import { Redirect, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Platform, View } from 'react-native';
+import { Platform, View, useWindowDimensions } from 'react-native';
 import { COLORS } from '@/src/theme/colors';
 import { useAuth } from '@/src/providers/AuthProvider';
+import LoadingVideo from '@/src/components/LoadingVideo';
 
 type TabIconName = keyof typeof Ionicons.glyphMap;
 
 const labels = {
-  home: 'Главная',
-  projects: 'Проекты',
-  tasks: 'Задачи',
-  installations: 'Монтажи',
-  requests: 'Заявки',
-  chats: 'Чаты',
+  home: '\u0413\u043b\u0430\u0432\u043d\u0430\u044f',
+  projects: '\u041f\u0440\u043e\u0435\u043a\u0442\u044b',
+  tasks: '\u0417\u0430\u0434\u0430\u0447\u0438',
+  installations: '\u041c\u043e\u043d\u0442\u0430\u0436\u0438',
+  requests: '\u0417\u0430\u044f\u0432\u043a\u0438',
+  chats: '\u0427\u0430\u0442\u044b',
 };
 
 const tabIcon =
@@ -22,12 +23,14 @@ const tabIcon =
 
 export default function AppTabsLayout() {
   const { loading, session, user } = useAuth();
-  const hasActiveSession = Boolean(session?.access_token && session?.user?.id && user?.id);
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+  const hasActiveSession = Boolean(session?.access_token || user?.id);
 
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg }}>
-        <ActivityIndicator color={COLORS.accent} size="large" />
+        <LoadingVideo size={210} />
       </View>
     );
   }
@@ -44,21 +47,22 @@ export default function AppTabsLayout() {
         headerTitleStyle: { fontWeight: '700', color: COLORS.text },
         headerShadowVisible: false,
         tabBarHideOnKeyboard: true,
+        tabBarShowLabel: !isLandscape,
         tabBarLabelPosition: 'below-icon',
         tabBarAllowFontScaling: false,
         tabBarStyle: {
           backgroundColor: COLORS.card,
           borderTopColor: COLORS.border,
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 82 : 64,
-          paddingTop: 4,
-          paddingBottom: Platform.OS === 'ios' ? 18 : 8,
+          height: isLandscape ? (Platform.OS === 'ios' ? 58 : 52) : Platform.OS === 'ios' ? 80 : 62,
+          paddingTop: isLandscape ? 2 : 4,
+          paddingBottom: isLandscape ? 2 : Platform.OS === 'ios' ? 14 : 6,
         },
-        tabBarItemStyle: { paddingVertical: 2, minWidth: 0 },
-        tabBarIconStyle: { marginTop: 1 },
+        tabBarItemStyle: { paddingVertical: isLandscape ? 0 : 2, minWidth: 0, justifyContent: 'center' },
+        tabBarIconStyle: { marginTop: 0 },
         tabBarActiveTintColor: COLORS.accent,
         tabBarInactiveTintColor: COLORS.sub,
-        tabBarLabelStyle: { fontSize: 10, lineHeight: 12, fontWeight: '700', marginBottom: 2 },
+        tabBarLabelStyle: { fontSize: 10, lineHeight: 12, fontWeight: '700', marginBottom: 1 },
       }}
     >
       <Tabs.Screen
@@ -111,15 +115,22 @@ export default function AppTabsLayout() {
       />
 
       <Tabs.Screen name="archive" options={{ href: null }} />
+      <Tabs.Screen name="project" options={{ href: null }} />
       <Tabs.Screen name="project/[id]" options={{ href: null }} />
+      <Tabs.Screen name="project/create" options={{ href: null }} />
+      <Tabs.Screen name="task" options={{ href: null }} />
       <Tabs.Screen name="task/[id]" options={{ href: null }} />
       <Tabs.Screen name="task/create/index" options={{ href: null }} />
       <Tabs.Screen name="task/[id]/comments/index" options={{ href: null }} />
+      <Tabs.Screen name="installation" options={{ href: null }} />
       <Tabs.Screen name="installation/[id]" options={{ href: null }} />
       <Tabs.Screen name="installation/create/index" options={{ href: null }} />
       <Tabs.Screen name="installation/[id]/comments/index" options={{ href: null }} />
+      <Tabs.Screen name="purchase-request" options={{ href: null }} />
       <Tabs.Screen name="purchase-request/[id]" options={{ href: null }} />
+      <Tabs.Screen name="purchase-request/create" options={{ href: null }} />
       <Tabs.Screen name="profile" options={{ href: null }} />
+      <Tabs.Screen name="user/[id]" options={{ href: null }} />
       <Tabs.Screen name="chat/[id]" options={{ href: null }} />
       <Tabs.Screen name="warehouse" options={{ href: null }} />
       <Tabs.Screen name="avr" options={{ href: null }} />

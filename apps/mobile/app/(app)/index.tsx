@@ -1,16 +1,10 @@
-﻿import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { installationsApi, projectsApi, purchaseRequestsApi, tasksApi } from '@/src/lib/supabase';
+import LoadingVideo from '@/src/components/LoadingVideo';
 
 const C = {
   bg: '#0A0A0F',
@@ -23,22 +17,13 @@ const C = {
   warning: '#F59E0B',
 };
 
-const statusLabels: Record<string, string> = {
-  new: 'Новая',
-  planned: 'Запланирована',
-  in_progress: 'В работе',
-  waiting_materials: 'Ждет материалы',
-  done: 'Выполнена',
-  postponed: 'Отложена',
-};
-
-const statusColors: Record<string, string> = {
-  new: '#3399ff',
-  planned: '#00D9FF',
-  in_progress: '#F59E0B',
-  waiting_materials: '#FF6B00',
-  done: '#00FF88',
-  postponed: '#8892a0',
+const roleTitleMap: Record<string, string> = {
+  manager: '\u0420\u0443\u043a\u043e\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044c',
+  deputy_head: '\u0417\u0430\u043c. \u0440\u0443\u043a\u043e\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044f',
+  support: '\u0422\u0435\u0445\u043f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0430',
+  admin: '\u0410\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440',
+  engineer: '\u0418\u043d\u0436\u0435\u043d\u0435\u0440',
+  worker: '\u0418\u0441\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c',
 };
 
 const StatCard = ({
@@ -59,7 +44,20 @@ const StatCard = ({
 );
 
 export default function DashboardScreen() {
-  const { user, isManager, logout } = useAuth();
+  const {
+    user,
+    isElevatedUser,
+    canCreateProjects,
+    canCreatePurchaseRequests,
+    canCreateTasks,
+    canCreateInstallations,
+    canViewWarehouse,
+    canViewSites,
+    canViewArchive,
+    canViewUsers,
+    canViewAtss,
+    logout,
+  } = useAuth();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -69,30 +67,133 @@ export default function DashboardScreen() {
     installations: 0,
     pendingRequests: 0,
   });
-  const [recentTasks, setRecentTasks] = useState<any[]>([]);
-  const [recentInstallations, setRecentInstallations] = useState<any[]>([]);
+
+  const roleName = roleTitleMap[user?.role || ''] || '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c';
+
+  const navItems = useMemo(() => {
+    const items: Array<{
+      key: string;
+      label: string;
+      icon: keyof typeof Ionicons.glyphMap;
+      route: string;
+      visible?: boolean;
+    }> = [
+      {
+        key: 'projects',
+        label: '\u041f\u0440\u043e\u0435\u043a\u0442\u044b',
+        icon: 'folder-open-outline',
+        route: '/(app)/projects',
+      },
+      { key: 'tasks', label: '\u0417\u0430\u0434\u0430\u0447\u0438', icon: 'checkbox-outline', route: '/(app)/tasks' },
+      {
+        key: 'installations',
+        label: '\u041c\u043e\u043d\u0442\u0430\u0436\u0438',
+        icon: 'construct-outline',
+        route: '/(app)/installations',
+      },
+      {
+        key: 'requests',
+        label: '\u0417\u0430\u044f\u0432\u043a\u0438',
+        icon: 'cart-outline',
+        route: '/(app)/purchase-requests',
+      },
+      { key: 'chats', label: '\u0427\u0430\u0442\u044b', icon: 'chatbubbles-outline', route: '/(app)/messenger' },
+      {
+        key: 'warehouse',
+        label: '\u0421\u043a\u043b\u0430\u0434',
+        icon: 'cube-outline',
+        route: '/(app)/warehouse',
+        visible: canViewWarehouse,
+      },
+      { key: 'avr', label: '\u0410\u0412\u0420', icon: 'warning-outline', route: '/(app)/avr' },
+      {
+        key: 'calendar',
+        label: '\u041a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c',
+        icon: 'calendar-outline',
+        route: '/(app)/calendar',
+      },
+      {
+        key: 'sites',
+        label: '\u041f\u043b\u043e\u0449\u0430\u0434\u043a\u0438',
+        icon: 'location-outline',
+        route: '/(app)/sites',
+        visible: canViewSites,
+      },
+      {
+        key: 'archive',
+        label: '\u0410\u0440\u0445\u0438\u0432',
+        icon: 'archive-outline',
+        route: '/(app)/archive',
+        visible: canViewArchive,
+      },
+      {
+        key: 'users',
+        label: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438',
+        icon: 'people-outline',
+        route: '/(app)/users',
+        visible: canViewUsers,
+      },
+      {
+        key: 'atss',
+        label: '\u0410\u0422\u0421\u0421',
+        icon: 'cloud-upload-outline',
+        route: '/(app)/atss',
+        visible: canViewAtss,
+      },
+      {
+        key: 'profile',
+        label: '\u041f\u0440\u043e\u0444\u0438\u043b\u044c',
+        icon: 'person-outline',
+        route: '/(app)/profile',
+      },
+    ];
+    return items.filter((item) => item.visible !== false);
+  }, [canViewArchive, canViewAtss, canViewSites, canViewUsers, canViewWarehouse]);
 
   const load = async () => {
     try {
+      const projectPromise = projectsApi.getAll().catch(() => []);
+      const taskPromise = tasksApi.getAll(isElevatedUser || !user?.id ? {} : { assignee_id: user.id }).catch(() => []);
+      const installationPromise = installationsApi
+        .getAll(isElevatedUser || !user?.id ? {} : { assignee_id: user.id })
+        .catch(() => []);
+      const requestsPromise = purchaseRequestsApi
+        .getAll(isElevatedUser || !user?.id ? {} : { created_by: user.id })
+        .catch(() => []);
+
       const [projects, tasks, installations, requests] = await Promise.all([
-        projectsApi.getAll().catch(() => []),
-        tasksApi.getAll().catch(() => []),
-        installationsApi.getAll().catch(() => []),
-        purchaseRequestsApi.getAll().catch(() => []),
+        projectPromise,
+        taskPromise,
+        installationPromise,
+        requestsPromise,
       ]);
 
       const normalizedTasks = Array.isArray(tasks) ? tasks : [];
       const normalizedInstallations = Array.isArray(installations) ? installations : [];
       const normalizedRequests = Array.isArray(requests) ? requests : [];
 
+      const projectList = Array.isArray(projects) ? projects : [];
+      const visibleProjects =
+        isElevatedUser || !user?.id
+          ? projectList
+          : projectList.filter((project) => {
+              if (project.created_by && String(project.created_by) === String(user.id)) {
+                return true;
+              }
+              return (
+                normalizedTasks.some((task) => String(task.project_id || '') === String(project.id)) ||
+                normalizedInstallations.some(
+                  (installation) => String(installation.project_id || '') === String(project.id)
+                )
+              );
+            });
+
       setStats({
-        projects: Array.isArray(projects) ? projects.length : 0,
+        projects: visibleProjects.length,
         tasks: normalizedTasks.length,
         installations: normalizedInstallations.length,
         pendingRequests: normalizedRequests.filter((item) => item.status === 'pending').length,
       });
-      setRecentTasks(normalizedTasks.slice(0, 4));
-      setRecentInstallations(normalizedInstallations.slice(0, 4));
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
     }
@@ -100,7 +201,7 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     load().finally(() => setLoading(false));
-  }, []);
+  }, [isElevatedUser, user?.id]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -111,8 +212,8 @@ export default function DashboardScreen() {
   if (loading) {
     return (
       <View style={s.center}>
-        <Text style={s.loadingLogo}>KORNEO</Text>
-        <ActivityIndicator color={C.accent} size="large" style={{ marginTop: 20 }} />
+        <Text style={s.loadingLogo}>{'\u041a\u043e\u0440\u043d\u0435\u043e'}</Text>
+        <LoadingVideo style={{ marginTop: 10 }} size={200} />
       </View>
     );
   }
@@ -123,148 +224,81 @@ export default function DashboardScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.accent} />}
     >
       <View style={s.header}>
-        <View>
-          <Text style={s.greeting}>Добро пожаловать,</Text>
-          <Text style={s.name}>{user?.name || user?.email?.split('@')[0] || 'Пользователь'}</Text>
-          <Text style={s.role}>{isManager ? 'Руководитель' : 'Исполнитель'}</Text>
+        <View style={{ flex: 1, marginRight: 10 }}>
+          <Text style={s.greeting}>{'\u0414\u043e\u0431\u0440\u043e \u043f\u043e\u0436\u0430\u043b\u043e\u0432\u0430\u0442\u044c,'}</Text>
+          <Text style={s.name}>
+            {user?.name || user?.email?.split('@')[0] || '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c'}
+          </Text>
+          <Text style={s.role}>{roleName}</Text>
         </View>
         <TouchableOpacity style={s.logoutBtn} onPress={logout}>
-          <Text style={s.logoutText}>Выйти</Text>
+          <Text style={s.logoutText}>{'\u0412\u044b\u0439\u0442\u0438'}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={s.statsGrid}>
-        <StatCard label="Проекты" value={stats.projects} color={C.accent} onPress={() => router.push('/(app)/projects')} />
-        <StatCard label="Задачи" value={stats.tasks} color={C.success} onPress={() => router.push('/(app)/tasks')} />
         <StatCard
-          label="Монтажи"
+          label={'\u041f\u0440\u043e\u0435\u043a\u0442\u044b'}
+          value={stats.projects}
+          color={C.accent}
+          onPress={() => router.push('/(app)/projects' as any)}
+        />
+        <StatCard
+          label={'\u0417\u0430\u0434\u0430\u0447\u0438'}
+          value={stats.tasks}
+          color={C.success}
+          onPress={() => router.push('/(app)/tasks' as any)}
+        />
+        <StatCard
+          label={'\u041c\u043e\u043d\u0442\u0430\u0436\u0438'}
           value={stats.installations}
           color={C.warning}
-          onPress={() => router.push('/(app)/installations')}
+          onPress={() => router.push('/(app)/installations' as any)}
         />
         <StatCard
-          label="Заявки"
+          label={'\u0417\u0430\u044f\u0432\u043a\u0438'}
           value={stats.pendingRequests}
           color={C.accent}
-          onPress={() => router.push('/(app)/purchase-requests')}
+          onPress={() => router.push('/(app)/purchase-requests' as any)}
         />
       </View>
 
-      <View style={s.section}>
-        <View style={s.sectionHeader}>
-          <Text style={s.sectionTitle}>Последние задачи</Text>
-          <TouchableOpacity onPress={() => router.push('/(app)/tasks')}>
-            <Text style={s.sectionLink}>Все</Text>
+      <View style={s.quickCreateRow}>
+        {canCreateProjects ? (
+          <TouchableOpacity style={s.quickCreateBtn} onPress={() => router.push('/(app)/project/create' as any)}>
+            <Text style={s.quickCreateText}>{'+ \u041f\u0440\u043e\u0435\u043a\u0442'}</Text>
           </TouchableOpacity>
-        </View>
-
-        {recentTasks.length === 0 ? (
-          <Text style={s.empty}>Задач пока нет</Text>
-        ) : (
-          recentTasks.map((task) => (
-            <TouchableOpacity
-              key={task.id}
-              style={s.itemCard}
-              onPress={() => router.push({ pathname: '/(app)/task/[id]', params: { id: task.id } } as any)}
-            >
-              <View style={s.itemTop}>
-                <Text style={s.itemTitle}>{task.title}</Text>
-                <View style={[s.badge, { backgroundColor: statusColors[task.status] || C.sub }]}>
-                  <Text style={s.badgeText}>{statusLabels[task.status] || task.status}</Text>
-                </View>
-              </View>
-              <Text style={s.itemSub}>{task.project?.name || 'Без проекта'}</Text>
-            </TouchableOpacity>
-          ))
-        )}
+        ) : null}
+        {canCreateTasks ? (
+          <TouchableOpacity style={s.quickCreateBtn} onPress={() => router.push('/(app)/task/create' as any)}>
+            <Text style={s.quickCreateText}>{'+ \u0417\u0430\u0434\u0430\u0447\u0430'}</Text>
+          </TouchableOpacity>
+        ) : null}
+        {canCreateInstallations ? (
+          <TouchableOpacity style={s.quickCreateBtn} onPress={() => router.push('/(app)/installation/create' as any)}>
+            <Text style={s.quickCreateText}>{'+ \u041c\u043e\u043d\u0442\u0430\u0436'}</Text>
+          </TouchableOpacity>
+        ) : null}
+        {canCreatePurchaseRequests ? (
+          <TouchableOpacity style={s.quickCreateBtn} onPress={() => router.push('/(app)/purchase-request/create' as any)}>
+            <Text style={s.quickCreateText}>{'+ \u0417\u0430\u044f\u0432\u043a\u0430'}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <View style={s.section}>
-        <View style={s.sectionHeader}>
-          <Text style={s.sectionTitle}>Последние монтажи</Text>
-          <TouchableOpacity onPress={() => router.push('/(app)/installations')}>
-            <Text style={s.sectionLink}>Все</Text>
-          </TouchableOpacity>
-        </View>
-
-        {recentInstallations.length === 0 ? (
-          <Text style={s.empty}>Монтажей пока нет</Text>
-        ) : (
-          recentInstallations.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={s.itemCard}
-              onPress={() =>
-                router.push({ pathname: '/(app)/installation/[id]', params: { id: item.id } } as any)
-              }
-            >
-              <View style={s.itemTop}>
-                <Text style={s.itemTitle}>{item.title || item.address || 'Монтаж'}</Text>
-                <View style={[s.badge, { backgroundColor: statusColors[item.status] || C.sub }]}>
-                  <Text style={s.badgeText}>{statusLabels[item.status] || item.status}</Text>
-                </View>
+        <Text style={s.sectionTitle}>{'\u041d\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044f'}</Text>
+        <View style={s.tilesWrap}>
+          {navItems.map((item) => (
+            <TouchableOpacity key={item.key} style={s.tile} onPress={() => router.push(item.route as any)}>
+              <View style={s.tileIconWrap}>
+                <Ionicons name={item.icon} size={18} color={C.accent} />
               </View>
-              <Text style={s.itemSub}>{item.project?.name || item.address || 'Без проекта'}</Text>
+              <Text style={s.tileText} numberOfLines={2}>
+                {item.label}
+              </Text>
             </TouchableOpacity>
-          ))
-        )}
-      </View>
-
-      <View style={s.section}>
-        <Text style={s.sectionTitle}>Навигация</Text>
-        <View style={s.linksGrid}>
-          <TouchableOpacity style={s.linkCard} onPress={() => router.push('/(app)/projects')}>
-            <Text style={s.linkTitle}>Проекты</Text>
-            <Text style={s.linkSub}>Список и карточки проектов</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.linkCard} onPress={() => router.push('/(app)/tasks')}>
-            <Text style={s.linkTitle}>Задачи</Text>
-            <Text style={s.linkSub}>Текущие работы и статусы</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.linkCard} onPress={() => router.push('/(app)/installations')}>
-            <Text style={s.linkTitle}>Монтажи</Text>
-            <Text style={s.linkSub}>Планирование и выполнение</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.linkCard} onPress={() => router.push('/(app)/purchase-requests')}>
-            <Text style={s.linkTitle}>Заявки</Text>
-            <Text style={s.linkSub}>Закупка материалов</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.linkCard} onPress={() => router.push('/(app)/archive')}>
-            <Text style={s.linkTitle}>Архив</Text>
-            <Text style={s.linkSub}>Завершенные записи</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.linkCard} onPress={() => router.push('/(app)/messenger')}>
-            <Text style={s.linkTitle}>Чаты</Text>
-            <Text style={s.linkSub}>Личные и групповые переписки</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.linkCard} onPress={() => router.push('/(app)/warehouse')}>
-            <Text style={s.linkTitle}>Склад</Text>
-            <Text style={s.linkSub}>Остатки и категории материалов</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.linkCard} onPress={() => router.push('/(app)/avr')}>
-            <Text style={s.linkTitle}>АВР / НРД</Text>
-            <Text style={s.linkSub}>Аварийные и технические заявки</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.linkCard} onPress={() => router.push('/(app)/calendar')}>
-            <Text style={s.linkTitle}>Календарь</Text>
-            <Text style={s.linkSub}>План на месяц по задачам и монтажам</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.linkCard} onPress={() => router.push('/(app)/sites')}>
-            <Text style={s.linkTitle}>Площадки</Text>
-            <Text style={s.linkSub}>Объекты и оборудование</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.linkCard} onPress={() => router.push('/(app)/users')}>
-            <Text style={s.linkTitle}>Пользователи</Text>
-            <Text style={s.linkSub}>Зарегистрированные пользователи</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.linkCard} onPress={() => router.push('/(app)/atss')}>
-            <Text style={s.linkTitle}>АТСС</Text>
-            <Text style={s.linkSub}>План-график АТСС из базы</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.linkCard} onPress={() => router.push('/(app)/profile')}>
-            <Text style={s.linkTitle}>Профиль</Text>
-            <Text style={s.linkSub}>Настройки и подписка</Text>
-          </TouchableOpacity>
+          ))}
         </View>
       </View>
     </ScrollView>
@@ -305,33 +339,47 @@ const s = StyleSheet.create({
   },
   statValue: { fontSize: 30, fontWeight: '800' },
   statLabel: { color: C.sub, marginTop: 4, fontSize: 12 },
+  quickCreateRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, marginTop: 10 },
+  quickCreateBtn: {
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,217,255,0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  quickCreateText: { color: C.accent, fontSize: 12, fontWeight: '700' },
   section: { marginTop: 22, paddingHorizontal: 16 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   sectionTitle: { color: C.text, fontSize: 18, fontWeight: '700' },
-  sectionLink: { color: C.accent, fontSize: 13, fontWeight: '600' },
-  itemCard: {
-    backgroundColor: C.card,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
+  tilesWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingBottom: 24 },
+  tile: {
+    width: '31%',
+    minHeight: 86,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: C.border,
-  },
-  itemTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  itemTitle: { color: C.text, fontSize: 14, fontWeight: '600', flex: 1, marginRight: 10 },
-  itemSub: { color: C.sub, marginTop: 6, fontSize: 12 },
-  badge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4 },
-  badgeText: { color: '#081018', fontSize: 10, fontWeight: '700' },
-  empty: { color: C.sub, fontSize: 14, paddingVertical: 12 },
-  linksGrid: { gap: 10, paddingBottom: 28 },
-  linkCard: {
     backgroundColor: C.card,
-    borderRadius: 14,
-    padding: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+  },
+  tileIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: C.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+    backgroundColor: 'rgba(0,217,255,0.1)',
   },
-  linkTitle: { color: C.accent, fontSize: 15, fontWeight: '700' },
-  linkSub: { color: C.sub, fontSize: 12, marginTop: 4 },
+  tileText: {
+    color: C.text,
+    fontSize: 11,
+    lineHeight: 13,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
 });
-

@@ -28,6 +28,17 @@ const statusLabel = (status: string) =>
     postponed: 'Отложена',
   }[status] || status);
 
+const statusOptions = [
+  'pending',
+  'approved',
+  'rejected',
+  'in_order',
+  'ready_for_receipt',
+  'received',
+  'done',
+  'postponed',
+] as const;
+
 export default function PurchaseRequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isManagerOrHigher } = useAuth();
@@ -50,13 +61,31 @@ export default function PurchaseRequestDetailScreen() {
     load();
   }, [id]);
 
-  const updateStatus = async (status: 'approved' | 'rejected') => {
+  const updateStatus = async (status: string) => {
     try {
       await purchaseRequestsApi.updateStatus(id, status);
       await load();
     } catch (error: any) {
       Alert.alert('Ошибка', error.message || 'Не удалось обновить заявку');
     }
+  };
+
+  const openStatusMenu = () => {
+    Alert.alert(
+      'Сменить статус',
+      'Выберите новое состояние заявки',
+      [
+        ...statusOptions.map((status) => ({
+          text: statusLabel(status),
+          onPress: () => {
+            if (request.status !== status) {
+              void updateStatus(status);
+            }
+          },
+        })),
+        { text: 'Отмена', style: 'cancel' as const },
+      ]
+    );
   };
 
   if (loading) {
@@ -108,17 +137,12 @@ export default function PurchaseRequestDetailScreen() {
         )}
       </View>
 
-      {isManagerOrHigher && request.status === 'pending' && (
+      {isManagerOrHigher && (
         <View style={s.card}>
-          <Text style={s.sectionTitle}>Действия</Text>
-          <View style={s.actions}>
-            <TouchableOpacity style={[s.actionBtn, s.approveBtn]} onPress={() => updateStatus('approved')}>
-              <Text style={s.actionText}>Одобрить</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[s.actionBtn, s.rejectBtn]} onPress={() => updateStatus('rejected')}>
-              <Text style={s.actionText}>Отклонить</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={s.sectionTitle}>Смена статуса</Text>
+          <TouchableOpacity style={s.statusSelectBtn} onPress={openStatusMenu}>
+            <Text style={s.statusSelectText}>{statusLabel(request.status)} ▾</Text>
+          </TouchableOpacity>
         </View>
       )}
     </ScrollView>
@@ -149,10 +173,15 @@ const s = StyleSheet.create({
   itemRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: C.border },
   itemName: { color: C.text, fontSize: 14, flex: 1, marginRight: 12 },
   itemQty: { color: C.sub, fontSize: 13 },
-  actions: { flexDirection: 'row', gap: 10 },
-  actionBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
-  approveBtn: { backgroundColor: C.green },
-  rejectBtn: { backgroundColor: C.red },
-  actionText: { color: '#081018', fontWeight: '700' },
+  statusSelectBtn: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.accent,
+    backgroundColor: 'rgba(0, 217, 255, 0.12)',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+  },
+  statusSelectText: { color: C.accent, fontSize: 13, fontWeight: '700' },
 });
 

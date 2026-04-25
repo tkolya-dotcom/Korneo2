@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -98,6 +99,25 @@ export default function AvrDetailScreen() {
     }
   };
 
+  const openStatusMenu = () => {
+    if (!item) return;
+    Alert.alert(
+      'Сменить статус',
+      'Выберите новое состояние заявки',
+      [
+        ...statuses.map((status) => ({
+          text: statusLabel(status),
+          onPress: () => {
+            if (item.status !== status) {
+              void updateStatus(status);
+            }
+          },
+        })),
+        { text: 'Отмена', style: 'cancel' as const },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={s.center}>
@@ -147,23 +167,11 @@ export default function AvrDetailScreen() {
       {canEditStatus ? (
         <View style={s.card}>
           <Text style={s.sectionTitle}>Смена статуса</Text>
-          <View style={s.statusWrap}>
-            {statuses.map((status) => {
-              const active = item.status === status;
-              return (
-                <TouchableOpacity
-                  key={status}
-                  style={[s.statusChip, active && s.statusChipActive]}
-                  onPress={() => updateStatus(status)}
-                  disabled={Boolean(updating)}
-                >
-                  <Text style={[s.statusText, active && s.statusTextActive]}>
-                    {updating === status ? '...' : statusLabel(status)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <TouchableOpacity style={s.statusSelectBtn} onPress={openStatusMenu} disabled={Boolean(updating)}>
+            <Text style={s.statusSelectText}>
+              {updating ? 'Сохраняем...' : `${statusLabel(item.status)} ▾`}
+            </Text>
+          </TouchableOpacity>
         </View>
       ) : null}
 
@@ -175,7 +183,7 @@ export default function AvrDetailScreen() {
           item.purchase_requests.map((request: any) => (
             <View key={request.id} style={s.prRow}>
               <Text style={s.prText}>
-                {request.short_id || request.id.slice(0, 8)} • {request.status}
+                {(request.short_id || String(request.id).slice(0, 8))} • {request.status}
               </Text>
               <Text style={s.prSub}>
                 {request.creator?.name || request.creator?.email || 'Пользователь'}
@@ -204,18 +212,16 @@ const s = StyleSheet.create({
   meta: { color: C.sub, fontSize: 12, marginTop: 6 },
   sectionTitle: { color: C.text, fontSize: 15, fontWeight: '700', marginBottom: 8 },
   description: { color: C.text, fontSize: 14, lineHeight: 20 },
-  statusWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  statusChip: {
+  statusSelectBtn: {
     borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: C.accent,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(0,217,255,0.14)',
+    alignItems: 'center',
   },
-  statusChipActive: { borderColor: C.accent, backgroundColor: 'rgba(0,217,255,0.18)' },
-  statusText: { color: C.sub, fontSize: 12, fontWeight: '600' },
-  statusTextActive: { color: C.accent },
+  statusSelectText: { color: C.accent, fontSize: 13, fontWeight: '700' },
   prRow: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.08)',
@@ -225,3 +231,4 @@ const s = StyleSheet.create({
   prText: { color: C.text, fontSize: 13, fontWeight: '600' },
   prSub: { color: C.sub, fontSize: 11, marginTop: 3 },
 });
+

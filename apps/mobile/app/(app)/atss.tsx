@@ -15,6 +15,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as XLSX from 'xlsx';
 import { useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '@/src/providers/AuthProvider';
 import { atssApi } from '@/src/lib/supabase';
 
 const C = {
@@ -235,6 +236,7 @@ const atssParseXlsx = (base64Content: string) => {
 };
 
 export default function AtssScreen() {
+  const { canViewAtss } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
@@ -247,6 +249,11 @@ export default function AtssScreen() {
   const [uploadLog, setUploadLog] = useState<string[]>([]);
 
   const load = useCallback(async () => {
+    if (!canViewAtss) {
+      setRows([]);
+      return;
+    }
+
     try {
       const data = await atssApi.getAll();
       setRows(data || []);
@@ -254,7 +261,7 @@ export default function AtssScreen() {
       console.error('Failed to load ATSS:', error);
       setRows([]);
     }
-  }, []);
+  }, [canViewAtss]);
 
   useEffect(() => {
     let active = true;
@@ -383,6 +390,14 @@ export default function AtssScreen() {
     return (
       <View style={s.center}>
         <ActivityIndicator color={C.accent} size="large" />
+      </View>
+    );
+  }
+
+  if (!canViewAtss) {
+    return (
+      <View style={s.center}>
+        <Text style={s.empty}>{'Недостаточно прав для просмотра АТСС'}</Text>
       </View>
     );
   }

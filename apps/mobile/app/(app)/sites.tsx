@@ -78,7 +78,7 @@ const isActiveStatus = (status: string) => {
 
 export default function SitesScreen() {
   const router = useRouter();
-  const { isManagerOrHigher } = useAuth();
+  const { isManagerOrHigher, canViewSites } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -88,6 +88,12 @@ export default function SitesScreen() {
   const [items, setItems] = useState<any[]>([]);
 
   const load = useCallback(async () => {
+    if (!canViewSites) {
+      setItems([]);
+      setErrorMessage(null);
+      return;
+    }
+
     try {
       setErrorMessage(null);
       const data = await sitesApi.getAll();
@@ -97,7 +103,7 @@ export default function SitesScreen() {
       setItems([]);
       setErrorMessage(toMessage(error, RU.loadError));
     }
-  }, []);
+  }, [canViewSites]);
 
   useEffect(() => {
     let active = true;
@@ -191,6 +197,14 @@ export default function SitesScreen() {
     return (
       <View style={s.center}>
         <ActivityIndicator color={C.accent} size="large" />
+      </View>
+    );
+  }
+
+  if (!canViewSites) {
+    return (
+      <View style={s.center}>
+        <Text style={s.empty}>Недостаточно прав для просмотра площадок</Text>
       </View>
     );
   }

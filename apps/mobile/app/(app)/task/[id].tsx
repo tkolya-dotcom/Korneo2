@@ -49,6 +49,24 @@ export default function TaskDetailScreen() {
     }
   };
 
+  const openStatusMenu = () => {
+    Alert.alert(
+      'Сменить статус',
+      'Выберите новое состояние задачи',
+      [
+        ...statuses.map((status) => ({
+          text: statusLabel(status),
+          onPress: () => {
+            if (task.status !== status) {
+              void updateStatus(status);
+            }
+          },
+        })),
+        { text: 'Отмена', style: 'cancel' as const },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={s.center}>
@@ -96,20 +114,11 @@ export default function TaskDetailScreen() {
       {isManager && (
         <View style={s.card}>
           <Text style={s.sectionTitle}>Сменить статус</Text>
-          <View style={s.statusList}>
-            {statuses.map((status) => (
-              <TouchableOpacity
-                key={status}
-                style={[s.statusBtn, task.status === status && s.statusBtnActive]}
-                onPress={() => updateStatus(status)}
-                disabled={saving}
-              >
-                <Text style={[s.statusBtnText, task.status === status && s.statusBtnTextActive]}>
-                  {statusLabel(status)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <TouchableOpacity style={s.statusSelectBtn} onPress={openStatusMenu} disabled={saving}>
+            <Text style={s.statusSelectText}>
+              {saving ? 'Сохраняем...' : `${statusLabel(task.status)} ▾`}
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
     </ScrollView>
@@ -145,16 +154,15 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryBtnText: { color: C.accent, fontWeight: '600' },
-  statusList: { gap: 8 },
-  statusBtn: {
+  statusSelectBtn: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: C.accent,
+    backgroundColor: 'rgba(0, 217, 255, 0.12)',
     paddingVertical: 12,
     paddingHorizontal: 14,
+    alignItems: 'center',
   },
-  statusBtnActive: { backgroundColor: 'rgba(0, 217, 255, 0.12)', borderColor: C.accent },
-  statusBtnText: { color: C.sub, fontSize: 13, fontWeight: '600' },
-  statusBtnTextActive: { color: C.accent },
+  statusSelectText: { color: C.accent, fontSize: 13, fontWeight: '700' },
 });
 

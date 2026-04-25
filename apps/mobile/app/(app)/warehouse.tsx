@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { materialsApi, warehouseApi } from '@/src/lib/supabase';
+import { useAuth } from '@/src/providers/AuthProvider';
 
 const C = {
   bg: '#0A0A0F',
@@ -152,6 +153,8 @@ const errorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 
 export default function WarehouseScreen() {
+  const { canViewWarehouse } = useAuth();
+  const canManageWarehouse = canViewWarehouse;
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [items, setItems] = useState<WarehouseDisplayItem[]>([]);
@@ -564,6 +567,14 @@ export default function WarehouseScreen() {
     );
   }
 
+  if (!canViewWarehouse) {
+    return (
+      <View style={s.center}>
+        <Text style={s.empty}>{'\u041d\u0435\u0442 \u043f\u0440\u0430\u0432 \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430 \u0441\u043a\u043b\u0430\u0434\u0430'}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={s.container}>
       <View style={s.header}>
@@ -572,13 +583,21 @@ export default function WarehouseScreen() {
       </View>
 
       <View style={s.actionsRow}>
-        <TouchableOpacity style={s.actionBtn} onPress={openAddStock}>
+        <TouchableOpacity style={s.actionBtn} onPress={openAddStock} disabled={!canManageWarehouse}>
           <Text style={s.actionBtnText}>➕ Пополнить</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[s.actionBtn, s.actionWarning]} onPress={() => void openIssueModal()}>
+        <TouchableOpacity
+          style={[s.actionBtn, s.actionWarning]}
+          onPress={() => void openIssueModal()}
+          disabled={!canManageWarehouse}
+        >
           <Text style={s.actionBtnText}>📤 Выдать</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[s.actionBtn, s.actionSecondary]} onPress={() => void openIssueHistory()}>
+        <TouchableOpacity
+          style={[s.actionBtn, s.actionSecondary]}
+          onPress={() => void openIssueHistory()}
+          disabled={!canManageWarehouse}
+        >
           <Text style={s.actionBtnText}>📋 История</Text>
         </TouchableOpacity>
       </View>
@@ -649,8 +668,11 @@ export default function WarehouseScreen() {
                     {formatQty(row.qty)}
                   </Text>
 
-                  {inStock ? (
-                    <TouchableOpacity style={s.issueMiniBtn} onPress={() => void openIssueModal(row.material_id)}>
+                  {inStock && canManageWarehouse ? (
+                    <TouchableOpacity
+                      style={s.issueMiniBtn}
+                      onPress={() => void openIssueModal(row.material_id)}
+                    >
                       <Text style={s.issueMiniBtnText}>Выдать</Text>
                     </TouchableOpacity>
                   ) : (

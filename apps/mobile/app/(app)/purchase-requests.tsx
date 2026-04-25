@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -46,7 +46,7 @@ const statusLabel = (status: string) =>
   }[status] || status);
 
 export default function PurchaseRequestsScreen() {
-  const { user, isManagerOrHigher } = useAuth();
+  const { user, isElevatedUser, canApproveRequests, canCreatePurchaseRequests } = useAuth();
   const router = useRouter();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,17 +55,18 @@ export default function PurchaseRequestsScreen() {
   const load = async () => {
     try {
       const data = await purchaseRequestsApi.getAll(
-        isManagerOrHigher || !user?.id ? {} : { created_by: user.id }
+        isElevatedUser || !user?.id ? {} : { created_by: user.id }
       );
       setItems(data || []);
     } catch (error) {
       console.error('Failed to load purchase requests:', error);
+      setItems([]);
     }
   };
 
   useEffect(() => {
     load().finally(() => setLoading(false));
-  }, []);
+  }, [isElevatedUser, user?.id]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -78,7 +79,7 @@ export default function PurchaseRequestsScreen() {
       await purchaseRequestsApi.updateStatus(id, status);
       await load();
     } catch (error: any) {
-      Alert.alert('Ошибка', error.message || 'Не удалось обновить заявку');
+      Alert.alert('Ошибка', error?.message || 'Не удалось обновить заявку');
     }
   };
 
@@ -93,13 +94,20 @@ export default function PurchaseRequestsScreen() {
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <Text style={s.title}>Заявки</Text>
-        <Text style={s.count}>{items.length}</Text>
+        <View>
+          <Text style={s.title}>Заявки</Text>
+          <Text style={s.count}>{items.length}</Text>
+        </View>
+        {canCreatePurchaseRequests ? (
+          <TouchableOpacity style={s.createBtn} onPress={() => router.push('/(app)/purchase-request/create' as any)}>
+            <Text style={s.createBtnText}>+ Создать</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <FlatList
         data={items}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.accent} />}
         contentContainerStyle={{ padding: 16 }}
         ListEmptyComponent={<Text style={s.empty}>Заявок нет</Text>}
@@ -115,22 +123,22 @@ export default function PurchaseRequestsScreen() {
           >
             <View style={s.row}>
               <Text style={s.cardTitle} numberOfLines={2}>
-                {item.comment || `Заявка #${item.id.slice(0, 8)}`}
+                {item.comment || `Заявка #${String(item.id).slice(0, 8)}`}
               </Text>
               <View style={[s.badge, { backgroundColor: statusColor(item.status) }]}>
                 <Text style={s.badgeText}>{statusLabel(item.status)}</Text>
               </View>
             </View>
 
-            {(item.installation?.title || item.installation?.address) && (
-              <Text style={s.sub}>🔧 {item.installation.title || item.installation.address}</Text>
-            )}
+            {item.installation?.title || item.installation?.address ? (
+              <Text style={s.sub}>Монтаж: {item.installation.title || item.installation.address}</Text>
+            ) : null}
 
-            {(item.creator?.name || item.creator?.email) && (
-              <Text style={s.sub}>👤 {item.creator?.name || item.creator?.email}</Text>
-            )}
+            {item.creator?.name || item.creator?.email ? (
+              <Text style={s.sub}>Создал: {item.creator?.name || item.creator?.email}</Text>
+            ) : null}
 
-            {isManagerOrHigher && item.status === 'pending' && (
+            {canApproveRequests && item.status === 'pending' ? (
               <View style={s.actions}>
                 <TouchableOpacity
                   style={[s.actionBtn, { backgroundColor: C.green }]}
@@ -145,7 +153,7 @@ export default function PurchaseRequestsScreen() {
                   <Text style={s.actionBtnText}>Отклонить</Text>
                 </TouchableOpacity>
               </View>
-            )}
+            ) : null}
           </TouchableOpacity>
         )}
       />
@@ -156,9 +164,24 @@ export default function PurchaseRequestsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, paddingTop: 48 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    paddingTop: 48,
+  },
   title: { color: C.text, fontSize: 26, fontWeight: '700' },
-  count: { color: C.sub, fontSize: 16 },
+  count: { color: C.sub, fontSize: 14, marginTop: 2 },
+  createBtn: {
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(0,217,255,0.12)',
+  },
+  createBtnText: { color: C.accent, fontSize: 12, fontWeight: '700' },
   card: {
     backgroundColor: C.card,
     borderRadius: 12,
