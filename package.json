@@ -10,7 +10,6 @@
   "scripts": {
     "web:start": "yarn workspace web start",
     "mobile:start": "npm run -w apps/mobile start",
-    "postinstall": "patch-package",
     "test": "echo \"Error: no test specified\" && exit 1",
     "mobile:typecheck": "npm run -w apps/mobile typecheck"
   },
@@ -25,7 +24,6 @@
   "license": "ISC",
   "devDependencies": {
     "http-server": "^14.1.1",
-    "live-server": "^1.2.2",
-    "patch-package": "^8.0.0"
+    "live-server": "^1.2.2"
   }
 }

@@ -1,21 +1,12 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/src/providers/AuthProvider';
 import { tasksApi, installationsApi } from '@/src/lib/supabase';
 
-const C = {
-  bg: '#0A0A0F',
-  card: '#1A1A2E',
-  accent: '#00D9FF',
-  text: '#E0E0E0',
-  sub: '#8892a0',
-  border: 'rgba(0, 217, 255, 0.15)',
-};
+const C = { bg: '#0f172a', card: '#1e293b', accent: '#02d7ff', text: '#e8f1ff', sub: '#9ab0c5', border: '#1e2a35' };
 
 export default function ArchiveScreen() {
   const router = useRouter();
-  const { canViewArchive } = useAuth();
   const [tasks, setTasks] = useState<any[]>([]);
   const [installations, setInstallations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,12 +14,6 @@ export default function ArchiveScreen() {
   const [tab, setTab] = useState<'tasks' | 'installations'>('tasks');
 
   const load = async () => {
-    if (!canViewArchive) {
-      setTasks([]);
-      setInstallations([]);
-      return;
-    }
-
     try {
       const [t, i] = await Promise.all([
         tasksApi.getArchived().catch(() => []),
@@ -39,19 +24,12 @@ export default function ArchiveScreen() {
     } catch (e) { console.error(e); }
   };
 
-  useEffect(() => { load().finally(() => setLoading(false)); }, [canViewArchive]);
+  useEffect(() => { load().finally(() => setLoading(false)); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
   const data = tab === 'tasks' ? tasks : installations;
 
   if (loading) return <View style={s.center}><ActivityIndicator color={C.accent} size="large" /></View>;
-  if (!canViewArchive) {
-    return (
-      <View style={s.center}>
-        <Text style={s.empty}>Недостаточно прав для просмотра архива</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={s.container}>

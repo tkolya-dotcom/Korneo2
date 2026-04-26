@@ -1,31 +1,14 @@
-﻿import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { commentsApi } from '@/src/lib/supabase';
 
-const C = {
-  bg: '#0A0A0F',
-  card: '#1A1A2E',
-  accent: '#00D9FF',
-  text: '#E0E0E0',
-  sub: '#8892a0',
-  border: 'rgba(0, 217, 255, 0.15)',
-  green: '#00FF88',
-};
+// Cyberpunk theme
+const C = { bg: '#0A0A0F', card: '#1A1A2E', accent: '#00D9FF', text: '#E0E0E0', sub: '#8892a0', border: 'rgba(0, 217, 255, 0.15)', green: '#00FF88' };
 
 export default function InstallationCommentsScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id } = useLocalSearchParams();
   const { user } = useAuth();
   const router = useRouter();
   const [comments, setComments] = useState<any[]>([]);
@@ -35,8 +18,8 @@ export default function InstallationCommentsScreen() {
 
   useEffect(() => {
     loadComments();
-
-    const channel = commentsApi.subscribe(id, 'installation', () => {
+    
+    const channel = commentsApi.subscribe('installation_comments', id as string, 'installation', () => {
       loadComments();
     });
 
@@ -47,56 +30,47 @@ export default function InstallationCommentsScreen() {
 
   const loadComments = async () => {
     try {
-      const data = await commentsApi.getByEntity(id, 'installation');
+      const data = await commentsApi.getByTask(id as string, 'installation');
       setComments(data || []);
-    } catch (error) {
-      console.error('Failed to load installation comments:', error);
+    } catch (e) {
+      console.error('Ошибка загрузки комментариев:', e);
     } finally {
       setLoading(false);
     }
   };
 
   const sendComment = async () => {
-    if (!inputText.trim() || sending) {
-      return;
-    }
-
+    if (!inputText.trim() || sending) return;
+    
     setSending(true);
     try {
-      await commentsApi.create(id, inputText.trim(), 'installation');
+      await commentsApi.create(id as string, inputText.trim(), 'installation');
       setInputText('');
-      await loadComments();
-    } catch (error) {
-      console.error('Failed to send installation comment:', error);
+      loadComments();
+    } catch (e) {
+      console.error('Ошибка отправки:', e);
     } finally {
       setSending(false);
     }
   };
 
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleString('ru', {
-      day: '2-digit',
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleString('ru', { 
+      day: '2-digit', 
       month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
+      hour: '2-digit', 
+      minute: '2-digit' 
     });
+  };
 
-  const isOwn = (authorId?: string) => authorId === user?.id;
+  const isOwn = (authorId: string) => authorId === user?.id;
 
   if (loading) {
-    return (
-      <View style={s.center}>
-        <ActivityIndicator color={C.accent} size="large" />
-      </View>
-    );
+    return <View style={s.center}><ActivityIndicator color={C.accent} size="large" /></View>;
   }
 
   return (
-    <KeyboardAvoidingView
-      style={s.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={90}
-    >
+    <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={s.backBtn}>←</Text>
@@ -111,11 +85,9 @@ export default function InstallationCommentsScreen() {
         contentContainerStyle={s.list}
         ListEmptyComponent={<Text style={s.empty}>Комментариев нет</Text>}
         renderItem={({ item }) => (
-          <View style={[s.comment, isOwn(item.author?.id) && s.commentOwn]}>
+          <View style={[s.comment, isOwn(item.author_id) && s.commentOwn]}>
             <View style={s.commentHeader}>
-              <Text style={s.authorName}>
-                {item.author?.name || item.author?.email?.split('@')[0] || 'Пользователь'}
-              </Text>
+              <Text style={s.authorName}>{item.author?.name || item.author?.email?.split('@')[0] || 'Пользователь'}</Text>
               <Text style={s.commentDate}>{formatDate(item.created_at)}</Text>
             </View>
             <Text style={s.commentText}>{item.content}</Text>
@@ -133,8 +105,8 @@ export default function InstallationCommentsScreen() {
           multiline
           maxLength={500}
         />
-        <TouchableOpacity
-          style={[s.sendBtn, (!inputText.trim() || sending) && s.sendBtnDisabled]}
+        <TouchableOpacity 
+          style={[s.sendBtn, (!inputText.trim() || sending) && s.sendBtnDisabled]} 
           onPress={sendComment}
           disabled={!inputText.trim() || sending}
         >
@@ -148,66 +120,21 @@ export default function InstallationCommentsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    paddingTop: 50,
-    backgroundColor: C.card,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingTop: 50, backgroundColor: C.card, borderBottomWidth: 1, borderBottomColor: C.border },
   backBtn: { color: C.accent, fontSize: 24, marginRight: 16 },
   headerTitle: { color: C.text, fontSize: 18, fontWeight: '600', flex: 1 },
   count: { color: C.sub, fontSize: 14 },
   list: { padding: 16, flexGrow: 1 },
   empty: { color: C.sub, textAlign: 'center', marginTop: 40 },
-  comment: {
-    backgroundColor: C.card,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: C.green,
-  },
-  commentOwn: {
-    borderLeftColor: C.accent,
-    backgroundColor: 'rgba(0, 217, 255, 0.1)',
-  },
+  comment: { backgroundColor: C.card, borderRadius: 12, padding: 12, marginBottom: 10, borderLeftWidth: 3, borderLeftColor: C.green },
+  commentOwn: { borderLeftColor: C.accent, backgroundColor: 'rgba(0, 217, 255, 0.1)' },
   commentHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   authorName: { color: C.green, fontSize: 12, fontWeight: '600' },
   commentDate: { color: C.sub, fontSize: 10 },
   commentText: { color: C.text, fontSize: 14, lineHeight: 20 },
-  inputArea: {
-    flexDirection: 'row',
-    padding: 12,
-    backgroundColor: C.card,
-    borderTopWidth: 1,
-    borderTopColor: C.border,
-    alignItems: 'flex-end',
-  },
-  input: {
-    flex: 1,
-    backgroundColor: C.bg,
-    color: C.text,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    fontSize: 14,
-    maxHeight: 80,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  sendBtn: {
-    backgroundColor: C.green,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
+  inputArea: { flexDirection: 'row', padding: 12, backgroundColor: C.card, borderTopWidth: 1, borderTopColor: C.border, alignItems: 'flex-end' },
+  input: { flex: 1, backgroundColor: C.bg, color: C.text, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, maxHeight: 80, borderWidth: 1, borderColor: C.border },
+  sendBtn: { backgroundColor: C.green, width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
   sendBtnDisabled: { backgroundColor: C.sub },
   sendBtnText: { color: C.bg, fontSize: 20, fontWeight: '700' },
 });
-
