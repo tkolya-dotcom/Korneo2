@@ -11,6 +11,7 @@ import ProjectDetail from './pages/ProjectDetail';
 import TaskDetail from './pages/TaskDetail';
 import InstallationDetail from './pages/InstallationDetail';
 import Archive from './pages/Archive';
+import Mileage from './pages/Mileage';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -70,6 +71,11 @@ function App() {
         <Route path="/archive" element={
           <PrivateRoute>
             <Archive />
+          </PrivateRoute>
+        } />
+        <Route path="/mileage" element={
+          <PrivateRoute>
+            <Mileage />
           </PrivateRoute>
         } />
       </Routes>
