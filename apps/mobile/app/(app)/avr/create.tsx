@@ -11,12 +11,13 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/src/providers/AuthProvider';
-import { avrApi, jobsApi } from '@/src/lib/supabase';
+import { authApi, avrApi, jobsApi } from '@/src/lib/supabase';
 import { searchAddressSuggestions } from '@/src/lib/addressSearch';
 import AddressSuggestionCard, {
   buildAddressSummary,
   normalizeAddressForDisplay,
 } from '@/src/components/AddressSuggestionCard';
+import EngineersSelector from '@/src/components/EngineersSelector';
 
 const C = {
   bg: '#0A0A0F',
@@ -32,7 +33,7 @@ const C = {
 const TYPES = [
   { id: 'AVR', label: '\u0410\u0412\u0420' },
   { id: 'NRD', label: '\u041d\u0420\u0414' },
-  { id: 'TECH_TASK', label: '\u0422\u0435\u0445. \u0437\u0430\u0434\u0430\u0447\u0430' },
+  { id: 'TECH_TASK', label: '\u0442\u0435\u0445. \u0437\u0430\u0434\u0430\u0447\u0430' },
 ] as const;
 
 type AddressItem = Record<string, any>;
@@ -46,7 +47,11 @@ type EquipmentOption = {
   inventory?: string;
 };
 
-const errorText = (error: unknown, fallback: string) =>
+const getUserName = (user: any): string => {
+    return user?.name || user?.email || `User ${String(user?.id || '').slice(0, 8)}`;
+  };
+
+  const errorText = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 
 const getAddressEquipmentOptions = (item: AddressItem | null): EquipmentOption[] => {
@@ -127,15 +132,23 @@ export default function AvrCreateScreen() {
   const [manualOldEquipment, setManualOldEquipment] = useState<Array<{ id: string; name: string }>>([]);
   const [manualNewEquipment, setManualNewEquipment] = useState<Array<{ id: string; name: string }>>([]);
   const [replacementReason, setReplacementReason] = useState('');
+  const [users, setUsers] = useState<any[]>([]);
+  const [selectedEngineerIds, setSelectedEngineerIds] = useState<string[]>([]);
+  const [selectedExecutorId, setSelectedExecutorId] = useState<string>('');
+  const [plannedInstallationDate, setPlannedInstallationDate] = useState('');
 
   useEffect(() => {
     let active = true;
     const loadAddresses = async () => {
       try {
         setAddressesLoading(true);
-        const rows = await jobsApi.getAddresses().catch(() => []);
+        const rows = await Promise.all([
+          jobsApi.getAddresses().catch(() => []),
+          authApi.getUsers().catch(() => []),
+        ]);
         if (active) {
-          setAddresses(rows || []);
+          setAddresses(rows[0] || []);
+          setUsers(rows[1] || []);
         }
       } finally {
         if (active) {
@@ -337,7 +350,7 @@ export default function AvrCreateScreen() {
         })
         .slice(0, 7);
 
-      const payload: Record<string, unknown> = {
+      const payload: Parameters<typeof avrApi.create>[0] = {
         title: normalizedTitle,
         type,
         description: description.trim() || null,
@@ -345,6 +358,9 @@ export default function AvrCreateScreen() {
         date_from: dateFrom.trim() || null,
         date_to: dateTo.trim() || null,
         replacement_reason: replacementReason.trim() || null,
+        engineers: selectedEngineerIds.length > 0 ? selectedEngineerIds : null,
+        executor_id: selectedExecutorId || null,
+        planned_installation_date: plannedInstallationDate.trim() || null,
       };
 
       // Add old equipment fields
@@ -501,6 +517,75 @@ export default function AvrCreateScreen() {
         placeholder={'\u041f\u043e\u0434\u0440\u043e\u0431\u043d\u043e\u0441\u0442\u0438 \u0437\u0430\u044f\u0432\u043a\u0438'}
         placeholderTextColor={C.sub}
         multiline
+      />
+
+      <EngineersSelector
+        users={users}
+        selectedIds={selectedEngineerIds}
+        onChange={setSelectedEngineerIds}
+        maxEngineers={6}
+      />
+
+      {/* EXECUTOR SELECTION */}
+      <View style={s.sectionHeader}>
+        <Text style={s.label}>{'Ответственный исполнитель'}</Text>
+        <TouchableOpacity
+          onPress={() => {
+            const availableUsers = users.filter((u) => !selectedExecutorId || String(u.id) !== selectedExecutorId);
+            if (availableUsers.length === 0) {
+              Alert.alert('Ошибка', 'Нет доступных пользователей');
+              return;
+            }
+            Alert.alert(
+              selectedExecutorId ? 'Изменить исполнителя' : 'Выбрать исполнителя',
+              '',
+              [
+                ...users.map((user) => ({
+                  text: getUserName(user),
+                  onPress: () => setSelectedExecutorId(String(user.id)),
+                })),
+                ...(selectedExecutorId ? [{ text: 'Убрать исполнителя', onPress: () => setSelectedExecutorId(''), style: 'destructive' as const }] : []),
+                { text: 'Отмена', style: 'cancel' as const },
+              ]
+            );
+          }}
+        >
+          <Text style={s.addBtn}>{selectedExecutorId ? '✎ Изменить' : '+ Выбрать'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {selectedExecutorId ? (
+        <View style={s.selectedExecutorCard}>
+          {(() => {
+            const executor = users.find((u) => String(u.id) === String(selectedExecutorId));
+            return (
+              <View style={s.executorRow}>
+                <View style={s.executorAvatar}>
+                  <Text style={s.executorAvatarText}>{executor ? executor.name?.slice(0, 2).toUpperCase() || '?' : '?'}</Text>
+                </View>
+                <View style={s.executorInfo}>
+                  <Text style={s.executorName}>{executor?.name || 'Пользователь'}</Text>
+                  {executor?.email && <Text style={s.executorEmail}>{executor.email}</Text>}
+                </View>
+                <TouchableOpacity onPress={() => setSelectedExecutorId('')}>
+                  <Text style={s.removeBtnText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })()}
+        </View>
+      ) : (
+        <Text style={s.hint}>{'Исполнитель не выбран'}</Text>
+      )}
+
+      {/* PLANNED INSTALLATION DATE */}
+      <Text style={s.label}>{'Планируемая дата монтажа'}</Text>
+      <TextInput
+        value={plannedInstallationDate}
+        onChangeText={setPlannedInstallationDate}
+        style={s.input}
+        placeholder={'YYYY-MM-DD или YYYY-MM-DDTHH:mm'}
+        placeholderTextColor={C.sub}
       />
 
       {/* OLD EQUIPMENT SECTION */}
@@ -716,8 +801,32 @@ const s = StyleSheet.create({
   },
   selectedHintText: { color: C.accent, fontSize: 12, fontWeight: '600' },
   selectedHintSub: { color: C.sub, fontSize: 11, marginTop: 4 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, marginBottom: 8 },
   addBtn: { color: C.success, fontSize: 13, fontWeight: '600' },
+  hint: { color: C.sub, fontSize: 13, marginBottom: 8 },
+  selectedExecutorCard: {
+    backgroundColor: C.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 12,
+    marginBottom: 12,
+  },
+  executorRow: { flexDirection: 'row', alignItems: 'center' },
+  executorAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: C.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  executorAvatarText: { color: C.bg, fontSize: 14, fontWeight: '700' },
+  executorInfo: { flex: 1 },
+  executorName: { color: C.text, fontSize: 14, fontWeight: '600' },
+  executorEmail: { color: C.sub, fontSize: 12, marginTop: 2 },
+  removeBtnText: { color: C.danger, fontSize: 16, padding: 8 },
   equipmentSourceCard: {
     borderRadius: 10,
     borderWidth: 1,

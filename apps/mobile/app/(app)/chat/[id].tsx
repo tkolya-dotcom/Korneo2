@@ -147,7 +147,6 @@ export default function ChatDetailScreen() {
 
   const loadMessagesAndJobs = useCallback(async () => {
     if (!id) return;
-    console.log('[ChatDebug] Loading messages for chat:', id);
     const [messagesResult, jobsResult] = await Promise.allSettled([
       chatApi.getMessages(id),
       jobsApi.getAll({ chat_id: id }),
@@ -155,43 +154,24 @@ export default function ChatDetailScreen() {
 
     if (messagesResult.status === 'fulfilled') {
       const rawMessages = messagesResult.value || [];
-      console.log('[ChatDebug] Raw messages count:', rawMessages.length);
-      console.log('[ChatDebug] User id from useAuth:', user?.id);
-      console.log('[ChatDebug] User id type:', typeof user?.id);
-      
-      // Debug: Check for any auth-related IDs
-      console.log('[ChatDebug] All raw message fields:', Object.keys(rawMessages[0] || {}).join(', '));
-      console.log('[ChatDebug] First 3 messages author_ids:', rawMessages.slice(0, 3).map(m => ({
-        id: m.id,
-        author_id: m.author_id,
-        user_id: m.user_id,
-        sender_id: m.sender_id,
-        created_by: m.created_by,
-        text: typeof m.text === 'string' ? m.text.slice(0, 30) : 'N/A'
-      })));
-      
-      // Use all messages, not just last 250 for better UX
       const messagesToShow = rawMessages.slice(-DEFAULT_MESSAGE_WINDOW);
       setMessages(messagesToShow);
-      
-      console.log('[ChatDebug] Set messages count:', messagesToShow.length);
-      
+
       await chatApi.markChatAsRead(id).catch((error) => {
         console.warn('Failed to mark chat as read:', error);
       });
-      
-      // Delay scroll to ensure render completes
+
       setTimeout(() => {
         scrollRef.current?.scrollToEnd({ animated: false });
       }, 100);
     } else {
-      console.error('[ChatDebug] Failed to load chat messages:', messagesResult.reason);
+      console.error('Failed to load chat messages:', messagesResult.reason);
     }
 
     if (jobsResult.status === 'fulfilled') {
       setJobs(jobsResult.value || []);
     } else {
-      console.warn('[ChatDebug] Failed to load chat jobs:', jobsResult.reason);
+      console.warn('Failed to load chat jobs:', jobsResult.reason);
       setJobs([]);
     }
   }, [id]);
@@ -664,8 +644,7 @@ export default function ChatDetailScreen() {
                 </TouchableOpacity>
               </View>
             );
-          })
-        )}
+          })}
       </ScrollView>
 
       <View style={s.inputWrap}>

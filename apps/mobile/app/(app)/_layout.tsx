@@ -1,148 +1,111 @@
+import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
-import { Text, View } from 'react-native';
-import { useAuth } from '@/src/providers/AuthProvider';
+import { Text } from 'react-native';
+import { bootstrapDatabaseOnFirstLaunch, syncDatabaseInBackground } from '@/src/lib/offlineData';
 
-// Cyberpunk theme - как в веб-приложении
 const THEME = {
-  bg: '#0A0A0F',
   card: '#1A1A2E',
   accent: '#00D9FF',
-  text: '#E0E0E0',
-  sub: '#8892a0',
+  sub: '#8892A0',
   border: 'rgba(0, 217, 255, 0.15)',
-  green: '#00FF88',
 };
 
+const icon = (emoji: string) => ({ color }: { color: string }) => (
+  <Text style={{ color, fontSize: 20 }}>{emoji}</Text>
+);
+
 export default function AppTabsLayout() {
-  const { canCreateTasks, isManagerOrHigher } = useAuth();
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const init = async () => {
+      await bootstrapDatabaseOnFirstLaunch();
+      await syncDatabaseInBackground(true);
+      timer = setInterval(() => {
+        void syncDatabaseInBackground();
+      }, 120000);
+    };
+
+    void init();
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, []);
 
   return (
     <Tabs
       screenOptions={{
         headerStyle: { backgroundColor: THEME.card },
         headerTintColor: THEME.accent,
-        headerTitleStyle: { fontWeight: '600', letterSpacing: 0.5 },
+        headerTitleStyle: { fontWeight: '600' },
         tabBarStyle: {
           backgroundColor: THEME.card,
           borderTopColor: THEME.border,
           borderTopWidth: 1,
+          height: 62,
           paddingTop: 4,
-          height: 60,
         },
         tabBarActiveTintColor: THEME.accent,
         tabBarInactiveTintColor: THEME.sub,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', marginBottom: 4 },
+        tabBarLabelStyle: { fontSize: 11, marginBottom: 4 },
       }}
     >
-      {/* Главная */}
       <Tabs.Screen
         name="index"
         options={{
           title: 'Главная',
           tabBarLabel: 'Главная',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🏠</Text>,
+          tabBarIcon: icon('⌂'),
         }}
       />
-
-      {/* Проекты */}
-      <Tabs.Screen
-        name="projects"
-        options={{
-          title: 'Проекты',
-          tabBarLabel: 'Проекты',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>📁</Text>,
-        }}
-      />
-
-      {/* Задачи */}
-      <Tabs.Screen
-        name="task"
-        options={{
-          title: 'Задачи',
-          tabBarLabel: 'Задачи',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>✅</Text>,
-        }}
-      />
-
-      {/* Монтажи */}
-      <Tabs.Screen
-        name="installation"
-        options={{
-          title: 'Монтажи',
-          tabBarLabel: 'Монтажи',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🔧</Text>,
-        }}
-      />
-
-      {/* АВР - только для инженеров и менеджеров */}
-      {canCreateTasks && (
-        <Tabs.Screen
-          name="avr"
-          options={{
-            title: 'АВР',
-            tabBarLabel: 'АВР',
-            tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>⚡</Text>,
-          }}
-        />
-      )}
-
-      {/* Чат - основной функционал */}
       <Tabs.Screen
         name="chat"
         options={{
-          title: 'Чат',
-          tabBarLabel: 'Чат',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>💬</Text>,
+          title: 'Чаты',
+          tabBarLabel: 'Чаты',
+          tabBarIcon: icon('💬'),
         }}
       />
-
-      {/* Склад - только для менеджеров */}
-      {isManagerOrHigher && (
-        <Tabs.Screen
-          name="warehouse"
-          options={{
-            title: 'Склад',
-            tabBarLabel: 'Склад',
-            tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>📦</Text>,
-          }}
-        />
-      )}
-
-      {/* Заявки */}
       <Tabs.Screen
-        name="users"
+        name="mileage"
         options={{
-          title: 'Люди',
-          tabBarLabel: 'Люди',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>👥</Text>,
+          title: 'Пробег',
+          tabBarLabel: 'Пробег',
+          tabBarIcon: icon('🛣️'),
         }}
       />
-
-      {/* Площадки */}
-      <Tabs.Screen
-        name="sites"
-        options={{
-          title: 'Площадки',
-          tabBarLabel: 'Площадки',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🗺️</Text>,
-        }}
-      />
-
-      {/* Профиль */}
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Профиль',
           tabBarLabel: 'Профиль',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>👤</Text>,
+          tabBarIcon: icon('👤'),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Настройки',
+          tabBarLabel: 'Настройки',
+          tabBarIcon: icon('⚙'),
         }}
       />
 
-      {/* === Скрытые экраны === */}
-      <Tabs.Screen
-        name="project"
-        options={{ href: null }}
-      />
+      <Tabs.Screen name="archive" options={{ href: null }} />
+      <Tabs.Screen name="installations" options={{ href: null }} />
+      <Tabs.Screen name="projects" options={{ href: null }} />
+      <Tabs.Screen name="purchase-requests" options={{ href: null }} />
+      <Tabs.Screen name="tasks" options={{ href: null }} />
+      <Tabs.Screen name="users" options={{ href: null }} />
+      <Tabs.Screen name="warehouse" options={{ href: null }} />
+      <Tabs.Screen name="sites" options={{ href: null }} />
+      <Tabs.Screen name="avr" options={{ href: null }} />
+      <Tabs.Screen name="installation" options={{ href: null }} />
+      <Tabs.Screen name="project" options={{ href: null }} />
+      <Tabs.Screen name="purchase-request" options={{ href: null }} />
+      <Tabs.Screen name="task" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -5,6 +5,7 @@
 
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { supabase } from './supabase';
 
 // Configure notification handler for foreground notifications
@@ -65,9 +66,17 @@ export async function getExpoPushToken(): Promise<string | null> {
       });
     }
 
-    const { data: expoPushToken } = await Notifications.getExpoPushTokenAsync({
-      projectId: 'planner-web-4fec7', // Your Firebase project ID
-    });
+    const expoExtra = (Constants.expoConfig?.extra || {}) as Record<string, unknown>;
+    const easExtra = (expoExtra.eas || {}) as Record<string, unknown>;
+    const easConfig = ((Constants as any).easConfig || {}) as Record<string, unknown>;
+    const projectId =
+      (easExtra.projectId as string | undefined) ||
+      (easConfig.projectId as string | undefined) ||
+      undefined;
+
+    const { data: expoPushToken } = projectId
+      ? await Notifications.getExpoPushTokenAsync({ projectId })
+      : await Notifications.getExpoPushTokenAsync();
 
     return expoPushToken || null;
   } catch (error) {
@@ -218,7 +227,7 @@ export async function scheduleLocalNotification(
         data: data || {},
         sound: 'default',
       },
-      trigger,
+      trigger: trigger ?? null,
     });
 
     return identifier;
