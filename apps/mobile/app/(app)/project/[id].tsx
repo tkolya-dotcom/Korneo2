@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { projectsApi, tasksApi, installationsApi } from '@/src/lib/supabase';
@@ -149,4 +149,3 @@ const s = StyleSheet.create({
   actionIcon: { fontSize: 20, marginRight: 10 },
   actionText: { color: C.accent, fontSize: 14, fontWeight: '600' }
 });
-

@@ -1,0 +1,131 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, RefreshControl, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAuth } from '@/src/providers/AuthProvider';
+import { chatsApi } from '@/src/lib/supabase';
+
+// Cyberpunk theme
+const C = { bg: '#0A0A0F', card: '#1A1A2E', accent: '#00D9FF', text: '#E0E0E0', sub: '#8892a0', border: 'rgba(0, 217, 255, 0.15)', green: '#00FF88' };
+
+export default function ChatListScreen() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [chats, setChats] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [newChatName, setNewChatName] = useState('');
+
+  useEffect(() => {
+    loadChats();
+  }, []);
+
+  const loadChats = async () => {
+    try {
+      const data = await chatsApi.getAll();
+      setChats(data || []);
+    } catch (e) {
+      console.error('Ошибка загрузки чатов:', e);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadChats();
+    setRefreshing(false);
+  };
+
+  const createChat = async () => {
+    if (!newChatName.trim()) return;
+    try {
+      const chat = await chatsApi.createChat(newChatName.trim(), 'group');
+      setShowNewChat(false);
+      setNewChatName('');
+      router.push({ pathname: '/(app)/chat/[id]', params: { id: chat.id } } as any);
+    } catch (e) {
+      console.error('Ошибка создания чата:', e);
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
+  };
+
+  const formatTime = (date: string) => {
+    const d = new Date(date);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 86400000) return d.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString('ru', { day: '2-digit', month: '2-digit' });
+  };
+
+  if (loading) {
+    return <View style={s.center}><ActivityIndicator color={C.accent} size="large" /></View>;
+  }
+
+  return (
+    <View style={s.container}>
+      <View style={s.header}>
+        <Text style={s.title}>Чат</Text>
+        <TouchableOpacity onPress={() => setShowNewChat(true)}>
+          <Text style={s.addIcon}>✏️</Text>
+        </TouchableOpacity>
+      </View>
+
+      {showNewChat && (
+        <View style={s.newChatBox}>
+          <TextInput style={s.newChatInput} placeholder="Название чата" placeholderTextColor={C.sub}
+            value={newChatName} onChangeText={setNewChatName} autoFocus />
+          <TouchableOpacity style={s.createBtn} onPress={createChat}>
+            <Text style={s.createBtnText}>Создать</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowNewChat(false)}>
+            <Text style={s.cancelBtn}>Отмена</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <FlatList
+        data={chats}
+        keyExtractor={item => item.id}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.accent} />}
+        contentContainerStyle={{ padding: 16 }}
+        ListEmptyComponent={<Text style={s.empty}>Нет чатов</Text>}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={s.chatItem} onPress={() => router.push({ pathname: '/(app)/chat/[id]', params: { id: item.id } } as any)}>
+            <View style={[s.avatar, item.type === 'group' && s.groupAvatar]}>
+              <Text style={s.avatarText}>{getInitials(item.name)}</Text>
+            </View>
+            <View style={s.chatInfo}>
+              <Text style={s.chatName} numberOfLines={1}>{item.name || 'Чат'}</Text>
+              <Text style={s.chatType}>{item.type === 'group' ? 'Группа' : 'Личный'}</Text>
+            </View>
+            <Text style={s.chatTime}>{item.updated_at ? formatTime(item.updated_at) : ''}</Text>
+          </TouchableOpacity>
+        )}
+      />
+    </View>
+  );
+}
+
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingTop: 50 },
+  title: { color: C.accent, fontSize: 26, fontWeight: '700' },
+  addIcon: { fontSize: 24 },
+  newChatBox: { flexDirection: 'row', padding: 12, backgroundColor: C.card, borderBottomWidth: 1, borderBottomColor: C.border },
+  newChatInput: { flex: 1, backgroundColor: C.bg, color: C.text, borderRadius: 8, padding: 10, fontSize: 14 },
+  createBtn: { backgroundColor: C.accent, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, marginLeft: 8 },
+  createBtnText: { color: C.bg, fontWeight: '600' },
+  cancelBtn: { color: C.sub, paddingHorizontal: 12, paddingVertical: 10 },
+  chatItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.card, borderRadius: 12, padding: 14, marginBottom: 10 },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: C.accent, justifyContent: 'center', alignItems: 'center' },
+  groupAvatar: { backgroundColor: '#8B5CF6' },
+  avatarText: { color: C.bg, fontSize: 16, fontWeight: '700' },
+  chatInfo: { flex: 1, marginLeft: 12 },
+  chatName: { color: C.text, fontSize: 15, fontWeight: '600' },
+  chatType: { color: C.sub, fontSize: 12, marginTop: 2 },
+  chatTime: { color: C.sub, fontSize: 11 },
+  empty: { color: C.sub, textAlign: 'center', marginTop: 60, fontSize: 16 },
+});

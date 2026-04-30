@@ -1,29 +1,8 @@
-import 'react-native-url-polyfill/auto';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
-import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, string | undefined>;
-const DEFAULT_SUPABASE_URL = 'https://jmxjbdnqnzkzxgsfywha.supabase.co';
-const DEFAULT_SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpteGpiZG5xbnprenhnc2Z5d2hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExNTQ0MzQsImV4cCI6MjA4NjczMDQzNH0.z6y6DGs9Z6kojQYeAdsgKA-m4pxuoeABdY4rAojPEE4';
-
-const supabaseUrl =
-  extra.supabaseUrl ||
-  process.env.EXPO_PUBLIC_SUPABASE_URL ||
-  DEFAULT_SUPABASE_URL;
-
-const supabaseAnonKey =
-  extra.supabaseAnonKey ||
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
-  DEFAULT_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase configuration for mobile app.');
-}
-
-const REQUEST_TIMEOUT_MS = 22000;
-const READ_RETRY_ATTEMPTS = 3;
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -34,76 +13,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-export const withTimeout = async <T>(
-  promise: PromiseLike<T>,
-  label = 'request',
-  timeoutMs = REQUEST_TIMEOUT_MS
-): Promise<T> => {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs);
-  });
-
-  try {
-    return await Promise.race([promise, timeout]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
-};
-
-const wait = (ms: number) =>
-  new Promise<void>((resolve) => {
-    setTimeout(resolve, ms);
-  });
-
-const isTransientError = (error: unknown): boolean => {
-  const message =
-    error instanceof Error
-      ? error.message
-      : typeof error === 'string'
-        ? error
-        : '';
-
-  const normalized = message.toLowerCase();
-  return (
-    normalized.includes('timed out') ||
-    normalized.includes('timeout') ||
-    normalized.includes('network') ||
-    normalized.includes('socket') ||
-    normalized.includes('failed to fetch') ||
-    normalized.includes('err_')
-  );
-};
-
-const withReadRetry = async <T>(
-  requestFactory: () => PromiseLike<T>,
-  label: string,
-  attempts = READ_RETRY_ATTEMPTS
-): Promise<T> => {
-  let lastError: unknown;
-
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    try {
-      return await withTimeout(requestFactory(), label);
-    } catch (error) {
-      lastError = error;
-      if (attempt >= attempts || !isTransientError(error)) {
-        throw error;
-      }
-      await wait(300 * attempt);
-    }
-  }
-
-  throw lastError ?? new Error(`${label} failed`);
-};
-
+// Helper
 const handle = <T>(data: T | null, error: { message: string } | null): T => {
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
   return data as T;
 };
 
+<<<<<<< HEAD
 const uniqueIds = (values: Array<string | null | undefined>) =>
   Array.from(new Set(values.filter((value): value is string => Boolean(value))));
 
@@ -901,1115 +817,173 @@ const getCurrentProfile = async () => {
   };
 };
 
+=======
+// Auth API
+>>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
 export const authApi = {
   login: async (email: string, password: string) => {
-    let signInData: any = null;
-    let lastError: unknown;
-
-    for (const timeoutMs of [40000, 60000]) {
-      try {
-        const { data, error } = await withTimeout(
-          supabase.auth.signInWithPassword({ email, password }),
-          'sign in',
-          timeoutMs
-        );
-        if (error) {
-          throw error;
-        }
-        signInData = data;
-        break;
-      } catch (error) {
-        lastError = error;
-        if (!isTransientError(error) || timeoutMs === 35000) {
-          throw error;
-        }
-        await wait(450);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+    
+    if (userError) {
+      if (userError.code === 'PGRST116') {
+        return { token: data.session?.access_token || null, user: { id: data.user.id, email: data.user.email, role: 'worker' } };
       }
+      throw userError;
     }
-
-    if (!signInData?.user) {
-      throw (lastError as Error) ?? new Error('Sign in failed');
-    }
-
-    let profile: any = null;
-    try {
-      profile = await withTimeout(
-        resolveUserProfile(signInData.user as AuthUserLike, { createIfMissing: true }),
-        'load profile after sign in',
-        10000
-      );
-    } catch (profileError) {
-      console.warn('Profile loading after sign in failed, using auth fallback:', profileError);
-      profile = buildAuthFallbackUser(signInData.user as AuthUserLike);
-    }
-
-    return {
-      token: signInData.session?.access_token || null,
-      session: signInData.session ?? null,
-      user: profile as any,
-    };
+    return { token: data.session?.access_token || null, user };
   },
-
+  
   register: async (email: string, password: string, name: string, role: string) => {
-    const { data, error } = await withTimeout(
-      supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name, role },
-        },
-      }),
-      'register',
-      12000
-    );
-
-    if (error) {
-      throw error;
-    }
-
-    if (!data.user) {
-      throw new Error('Registration failed');
-    }
-
-    let authUser = data.user as AuthUserLike;
-    let accessToken = data.session?.access_token || null;
-    if (!accessToken) {
-      const signInResult = await withTimeout(
-        supabase.auth.signInWithPassword({ email, password }),
-        'sign in after registration',
-        25000
-      ).catch(() => null);
-
-      if (signInResult && !(signInResult as any).error) {
-        const signInData = (signInResult as any).data || {};
-        authUser = (signInData.user || authUser) as AuthUserLike;
-        accessToken = signInData.session?.access_token || accessToken;
-      }
-    }
-
-    const normalizedRole = normalizeRoleInput(role);
-    const profile = await resolveUserProfile(authUser, {
-      createIfMissing: true,
-      preferredName: name,
-      preferredRole: normalizedRole,
-    });
-
-    return {
-      token: accessToken,
-      user: {
-        ...(profile as any),
-        name: (profile as any)?.name || name,
-        role: (profile as any)?.role || normalizedRole,
-      },
-    };
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    const { data: user, error: userError } = await supabase.from('users').insert([{ id: data.user!.id, email, name, role }]).select().single();
+    if (userError) throw userError;
+    return { token: data.session?.access_token || null, user };
   },
-
+  
   getMe: async () => {
-    const { user } = await getCurrentProfile();
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    if (authError || !authUser) throw new Error('Not authenticated');
+    
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', authUser.id)
+      .single();
+    
+    if (userError) {
+      if (userError.code === 'PGRST116') {
+        return { user: { id: authUser.id, email: authUser.email, role: 'worker', name: authUser.email?.split('@')[0] } };
+      }
+      throw userError;
+    }
     return { user };
   },
-
+  
   getUsers: async (role?: string) => {
-    const variants = ['id, name, email, role, is_online, last_seen_at', 'id, name, email, role'];
-    let lastError: unknown;
-
-    for (const columns of variants) {
-      const { data, error } = await withReadRetry(() => {
-        let query = supabase.from('users').select(columns).order('name');
-        if (role) {
-          query = query.eq('role', role);
-        }
-        return query;
-      }, 'load users');
-
-      if (!error) {
-        return (data || []) as any[];
-      }
-
-      lastError = error;
-      if (isColumnMissingError(error)) {
-        continue;
-      }
-      if (isPermissionDeniedError(error) || isRelationMissingError(error)) {
-        return [];
-      }
-      throw error;
-    }
-
-    if (lastError) {
-      throw lastError as Error;
-    }
-    return [];
+    let query = supabase.from('users').select('*');
+    if (role) query = query.eq('role', role);
+    const { data, error } = await query;
+    return handle(data, error);
   },
-};
-
-const updatePresenceState = async (
-  authUser: { id: string },
-  user: { id?: string; auth_user_id?: string },
-  patch: Record<string, unknown>
-) => {
-  const candidateIds = uniqueIds([
-    user?.id ? String(user.id) : null,
-    user?.auth_user_id ? String(user.auth_user_id) : null,
-    authUser?.id ? String(authUser.id) : null,
-  ]);
-
-  for (const candidateId of candidateIds) {
-    const { data, error } = await supabase
-      .from('users')
-      .update(patch)
-      .eq('id', candidateId)
-      .select('id');
-
-    if (!error && Array.isArray(data) && data.length > 0) {
-      return;
-    }
-
-    if (error) {
-      if (isPermissionDeniedError(error) || isRelationMissingError(error)) {
-        return;
-      }
-      if (!isColumnMissingError(error)) {
-        throw error;
-      }
-    }
-  }
-
-  if (!authUser?.id) {
-    return;
-  }
-
-  const { error } = await supabase
-    .from('users')
-    .update(patch)
-    .eq('auth_user_id', authUser.id)
-    .select('id');
-
-  if (!error) {
-    return;
-  }
-
-  if (
-    isColumnMissingError(error) ||
-    isPermissionDeniedError(error) ||
-    isRelationMissingError(error)
-  ) {
-    return;
-  }
-
-  throw error;
 };
 
 export const usersApi = {
-  getAll: async () => {
-    const variants = [
-      'id, name, email, role, is_online, last_seen_at, created_at',
-      'id, name, email, role, is_online, last_seen_at',
-      'id, name, email, role',
-    ];
-    let lastError: unknown;
-
-    for (const columns of variants) {
-      const { data, error } = await withReadRetry(
-        () =>
-          supabase
-            .from('users')
-            .select(columns)
-            .order('name', { ascending: true }),
-        'load users'
-      );
-
-      if (!error) {
-        return (data || []) as any[];
-      }
-
-      lastError = error;
-      if (isColumnMissingError(error)) {
-        continue;
-      }
-      if (isPermissionDeniedError(error) || isRelationMissingError(error)) {
-        return [];
-      }
-      throw error;
-    }
-
-    if (lastError) {
-      throw lastError as Error;
-    }
-    return [];
-  },
-
-  getById: async (id: string) => {
-    const normalizedId = String(id || '').trim();
-    if (!normalizedId) {
-      throw new Error('User id is required');
-    }
-
-    const variants = [
-      'id, auth_user_id, name, email, role, is_online, last_seen_at, created_at, phone, username, birthday, avatar_url',
-      'id, auth_user_id, name, email, role, is_online, last_seen_at, created_at, phone, username, birthday',
-      'id, auth_user_id, name, email, role, is_online, last_seen_at, created_at',
-      'id, name, email, role, is_online, last_seen_at',
-      'id, name, email, role',
-    ];
-
-    let lastError: unknown;
-
-    for (const columns of variants) {
-      const { data, error } = await withReadRetry(
-        () =>
-          supabase
-            .from('users')
-            .select(columns)
-            .eq('id', normalizedId)
-            .maybeSingle(),
-        'load user by id'
-      );
-
-      if (!error) {
-        if (data) {
-          return data as unknown as Record<string, unknown>;
-        }
-        break;
-      }
-
-      lastError = error;
-      if (isColumnMissingError(error)) {
-        continue;
-      }
-      if (isPermissionDeniedError(error) || isRelationMissingError(error)) {
-        return null;
-      }
-      throw error;
-    }
-
-    if (lastError) {
-      throw lastError as Error;
-    }
-
-    return null;
-  },
-
-  updateProfile: async (patch: {
-    name?: string | null;
-    email?: string | null;
-    phone?: string | null;
-    username?: string | null;
-    birthday?: string | null;
-    avatar_url?: string | null;
-  }) => {
-    const normalizeNullableText = (value: unknown) => {
-      if (value === null) {
-        return null;
-      }
-      if (typeof value !== 'string') {
-        return undefined;
-      }
-      const trimmed = value.trim();
-      return trimmed ? trimmed : null;
-    };
-
-    const cleanPatch = Object.fromEntries(
-      Object.entries({
-        name: normalizeNullableText(patch.name),
-        email: normalizeNullableText(patch.email),
-        phone: normalizeNullableText(patch.phone),
-        username: normalizeNullableText(patch.username),
-        birthday: normalizeNullableText(patch.birthday),
-        avatar_url: normalizeNullableText(patch.avatar_url),
-      }).filter(([, value]) => value !== undefined)
-    );
-
-    if (Object.keys(cleanPatch).length === 0) {
-      throw new Error('No profile fields to update');
-    }
-
-    const { authUser, user } = await getCurrentProfile();
-    const candidateIds = uniqueIds([
-      user?.id ? String(user.id) : null,
-      user?.auth_user_id ? String(user.auth_user_id) : null,
-      authUser?.id ? String(authUser.id) : null,
-    ]);
-
-    const patchAttempts: Array<Record<string, unknown>> = [
-      cleanPatch,
-      Object.fromEntries(
-        Object.entries(cleanPatch).filter(([key]) => !['avatar_url', 'birthday', 'username', 'phone'].includes(key))
-      ),
-      Object.fromEntries(
-        Object.entries(cleanPatch).filter(([key]) => ['name', 'email'].includes(key))
-      ),
-    ].filter((attempt) => Object.keys(attempt).length > 0);
-
-    const selectColumns =
-      'id, auth_user_id, name, email, role, is_online, last_seen_at, created_at, phone, username, birthday, avatar_url';
-
-    const updateById = async (id: string, attempt: Record<string, unknown>) => {
-      const { data, error } = await supabase
-        .from('users')
-        .update(attempt)
-        .eq('id', id)
-        .select(selectColumns)
-        .maybeSingle();
-
-      if (error?.code === 'PGRST116') {
-        return null;
-      }
-      if (!error) {
-        return data || null;
-      }
-      throw error;
-    };
-
-    let lastError: unknown;
-    for (const attempt of patchAttempts) {
-      for (const candidateId of candidateIds) {
-        try {
-          const updated = await updateById(candidateId, attempt);
-          if (updated) {
-            return updated;
-          }
-        } catch (error) {
-          lastError = error;
-          if (isColumnMissingError(error)) {
-            continue;
-          }
-          if (isPermissionDeniedError(error) || isRelationMissingError(error)) {
-            throw new Error('Недостаточно прав для изменения профиля');
-          }
-          throw error;
-        }
-      }
-    }
-
-    if (!authUser?.id) {
-      throw (lastError as Error) ?? new Error('Не удалось обновить профиль');
-    }
-
-    for (const attempt of patchAttempts) {
-      const { data, error } = await supabase
-        .from('users')
-        .update(attempt)
-        .eq('auth_user_id', authUser.id)
-        .select(selectColumns)
-        .maybeSingle();
-
-      if (!error && data) {
-        return data;
-      }
-
-      lastError = error;
-      if (isColumnMissingError(error)) {
-        continue;
-      }
-      if (isPermissionDeniedError(error) || isRelationMissingError(error)) {
-        throw new Error('Недостаточно прав для изменения профиля');
-      }
-      if (error) {
-        throw error;
-      }
-    }
-
-    throw (lastError as Error) ?? new Error('Не удалось обновить профиль');
-  },
-
   heartbeat: async () => {
-    const { authUser, user } = (await getCurrentProfile()) as any;
-    await updatePresenceState(authUser, user, {
-      is_online: true,
-      last_seen_at: new Date().toISOString(),
-    });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('users').update({ is_online: true, last_seen_at: new Date().toISOString() }).eq('id', user.id);
   },
-
-  setPushToken: async (token: string | null) => {
-    try {
-      const { authUser, user } = (await getCurrentProfile()) as any;
-      const candidateIds = uniqueIds([
-        user?.id ? String(user.id) : null,
-        user?.auth_user_id ? String(user.auth_user_id) : null,
-        authUser?.id ? String(authUser.id) : null,
-      ]);
-
-      const patchVariants: Array<Record<string, unknown>> = [
-        { fcm_token: token || null },
-        { push_token: token || null },
-        { expo_push_token: token || null },
-        { notification_token: token || null },
-      ];
-
-      const applyPatch = async (patch: Record<string, unknown>) => {
-        for (const candidateId of candidateIds) {
-          const { data, error } = await supabase
-            .from('users')
-            .update(patch)
-            .eq('id', candidateId)
-            .select('id');
-
-          if (!error && Array.isArray(data) && data.length > 0) {
-            return true;
-          }
-
-          if (!error) {
-            continue;
-          }
-
-          if (isColumnMissingError(error)) {
-            return false;
-          }
-
-          if (isPermissionDeniedError(error) || isRelationMissingError(error)) {
-            return true;
-          }
-
-          throw error;
-        }
-
-        if (authUser?.id) {
-          const { data, error } = await supabase
-            .from('users')
-            .update(patch)
-            .eq('auth_user_id', authUser.id)
-            .select('id');
-
-          if (!error && Array.isArray(data) && data.length > 0) {
-            return true;
-          }
-
-          if (!error) {
-            return false;
-          }
-
-          if (isColumnMissingError(error)) {
-            return false;
-          }
-
-          if (isPermissionDeniedError(error) || isRelationMissingError(error)) {
-            return true;
-          }
-
-          throw error;
-        }
-
-        return false;
-      };
-
-      for (const patch of patchVariants) {
-        const done = await applyPatch(patch);
-        if (done) {
-          return;
-        }
-      }
-    } catch (error) {
-      if (isPermissionDeniedError(error) || isRelationMissingError(error) || isColumnMissingError(error)) {
-        return;
-      }
-      throw error;
-    }
-  },
-
   markOffline: async () => {
-    try {
-      const { authUser, user } = await getCurrentProfile();
-      await updatePresenceState(authUser as any, user as any, {
-        is_online: false,
-        last_seen_at: new Date().toISOString(),
-      });
-    } catch {
-      // Ignore sign-out cleanup errors.
-    }
-  },
-};
-
-type NotificationQueueRow = {
-  id: string | number;
-  user_id?: string | number | null;
-  recipient_id?: string | number | null;
-  title?: string | null;
-  body?: string | null;
-  data?: Record<string, unknown> | string | null;
-  is_read?: boolean | null;
-  created_at?: string | null;
-};
-
-const normalizeQueuePayload = (value: NotificationQueueRow['data']) => {
-  if (!value) {
-    return {} as Record<string, unknown>;
-  }
-
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value);
-      return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {};
-    } catch {
-      return {};
-    }
-  }
-
-  if (typeof value === 'object') {
-    return value as Record<string, unknown>;
-  }
-
-  return {};
-};
-
-const loadPendingQueueRows = async (userIds: string[], limit = 20) => {
-  const variants = [
-    'id, user_id, recipient_id, title, body, data, is_read, created_at',
-    'id, user_id, recipient_id, title, body, data, created_at',
-    '*',
-  ];
-  const filterColumns: Array<'user_id' | 'recipient_id'> = ['user_id', 'recipient_id'];
-  let lastError: unknown;
-  const rowsById = new Map<string, NotificationQueueRow>();
-
-  for (const filterColumn of filterColumns) {
-    let loadedByColumn = false;
-    for (const columns of variants) {
-      const { data, error } = await withReadRetry(
-        () =>
-          supabase
-            .from('notification_queue')
-            .select(columns)
-            .in(filterColumn, userIds)
-            .order('created_at', { ascending: true })
-            .limit(Math.max(1, Math.min(limit, 100))),
-        'load notification queue'
-      );
-
-      if (!error) {
-        loadedByColumn = true;
-        const rows = (data || []) as unknown as NotificationQueueRow[];
-        for (const row of rows) {
-          const rowId = String(row?.id ?? '').trim();
-          if (!rowId) {
-            continue;
-          }
-          const existing = rowsById.get(rowId);
-          if (!existing) {
-            rowsById.set(rowId, row);
-            continue;
-          }
-
-          const existingTs = toSeenTimestamp(existing.created_at || null);
-          const incomingTs = toSeenTimestamp(row.created_at || null);
-          if (incomingTs > existingTs) {
-            rowsById.set(rowId, row);
-          }
-        }
-        break;
-      }
-
-      lastError = error;
-      if (isColumnMissingError(error)) {
-        continue;
-      }
-      if (isPermissionDeniedError(error) || isRelationMissingError(error)) {
-        return [] as NotificationQueueRow[];
-      }
-      throw error;
-    }
-
-    if (!loadedByColumn) {
-      continue;
-    }
-  }
-
-  if (rowsById.size > 0) {
-    return [...rowsById.values()]
-      .sort((a, b) => {
-        const aTime = toSeenTimestamp(a.created_at || null);
-        const bTime = toSeenTimestamp(b.created_at || null);
-        if (aTime !== bTime) {
-          return aTime - bTime;
-        }
-        return String(a.id).localeCompare(String(b.id));
-      })
-      .slice(0, Math.max(1, Math.min(limit, 100)));
-  }
-
-  if (lastError && !isColumnMissingError(lastError)) {
-    throw lastError as Error;
-  }
-
-  return [] as NotificationQueueRow[];
-};
-
-export const notificationsApi = {
-  pullPending: async (limit = 20) => {
-    const { authUser, user } = await getCurrentProfile();
-    const userIds = uniqueIds([
-      user?.id ? String(user.id) : null,
-      (user as any)?.auth_user_id ? String((user as any).auth_user_id) : null,
-      authUser?.id ? String(authUser.id) : null,
-    ]);
-
-    if (!userIds.length) {
-      return [];
-    }
-
-    const rows = await loadPendingQueueRows(userIds, limit);
-    return rows
-      .filter((row) => row && row.id != null)
-      .filter((row) => row.is_read !== true)
-      .map((row) => ({
-        id: String(row.id),
-        title: row.title?.trim() || 'Корнео',
-        body: row.body?.trim() || '',
-        data: normalizeQueuePayload(row.data),
-        created_at: row.created_at || null,
-      }));
-  },
-
-  markRead: async (ids: string[]) => {
-    const normalizedIds = uniqueIds(ids.map((item) => String(item || '').trim()));
-    if (!normalizedIds.length) {
-      return;
-    }
-
-    const nowIso = new Date().toISOString();
-    const attempts = [
-      { is_read: true, read_at: nowIso },
-      { is_read: true, viewed_at: nowIso },
-      { is_read: true },
-      { viewed_at: nowIso },
-    ];
-
-    for (const patch of attempts) {
-      const { error } = await supabase.from('notification_queue').update(patch).in('id', normalizedIds);
-      if (!error) {
-        return;
-      }
-      if (
-        isColumnMissingError(error) ||
-        isPermissionDeniedError(error) ||
-        isRelationMissingError(error)
-      ) {
-        continue;
-      }
-      throw error;
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('users').update({ is_online: false, last_seen_at: new Date().toISOString() }).eq('id', user.id);
   },
 };
 
 export const projectsApi = {
   getAll: async (status?: string) => {
-    const { data, error } = await withReadRetry(() => {
-      let query = supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (status) {
-        query = query.eq('status', status);
-      }
-
-      return query;
-    }, 'load projects');
-
-    const projects = handle<any[]>(data, error);
-    const usersMap = await fetchUsersMap(projects.map((project) => project.created_by));
-    return projects.map((project) => normalizeProject(project, usersMap));
-  },
-
-  getById: async (id: string) => {
-    const { data, error } = await withReadRetry(
-      () =>
-        supabase
-          .from('projects')
-          .select('*')
-          .eq('id', id)
-          .single(),
-      'load project'
-    );
-
-    const project = handle<any>(data, error);
-    const usersMap = await fetchUsersMap([project.created_by]);
-    return normalizeProject(project, usersMap);
-  },
-
-  create: async (project: Record<string, unknown>) => {
-    const { user } = await getCurrentProfile();
-    const payloadWithAuthor = {
-      ...project,
-      created_by: (user as any).id,
-    };
-
-    const attempts = [
-      payloadWithAuthor,
-      { ...payloadWithAuthor, created_by: undefined },
-    ];
-
-    let lastError: unknown;
-    for (const payload of attempts) {
-      const { data, error } = await supabase
-        .from('projects')
-        .insert([payload])
-        .select()
-        .single();
-      if (!error) {
-        return data;
-      }
-
-      lastError = error;
-      if (!isColumnMissingError(error)) {
-        throw error;
-      }
-    }
-
-    throw lastError as Error;
-  },
-
-  update: async (id: string, project: Record<string, unknown>) => {
-    const { data, error } = await supabase
-      .from('projects')
-      .update(project)
-      .eq('id', id)
-      .select()
-      .single();
-
+    let query = supabase.from('projects').select('*');
+    if (status) query = query.eq('status', status);
+    const { data, error } = await query;
     return handle(data, error);
   },
-
+  getById: async (id: string) => {
+    const { data, error } = await supabase.from('projects').select('*').eq('id', id).single();
+    return handle(data, error);
+  },
+  create: async (project: any) => {
+    const { data, error } = await supabase.from('projects').insert([project]).select().single();
+    return handle(data, error);
+  },
+  update: async (id: string, project: any) => {
+    const { data, error } = await supabase.from('projects').update(project).eq('id', id).select().single();
+    return handle(data, error);
+  },
   delete: async (id: string) => {
     const { error } = await supabase.from('projects').delete().eq('id', id);
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   },
 };
 
 export const tasksApi = {
-  getAll: async (filters: Record<string, string> = {}) => {
-    const { data, error } = await withReadRetry(() => {
-      let query = supabase
-        .from('tasks')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (filters.project_id) {
-        query = query.eq('project_id', filters.project_id);
-      }
-      if (filters.assignee_id) {
-        query = query.eq('assignee_id', filters.assignee_id);
-      }
-      if (filters.status) {
-        query = query.eq('status', filters.status);
-      }
-
-      return query;
-    }, 'load tasks');
-
-    const tasks = handle<any[]>(data, error);
-    const projectsMap = await fetchProjectsMap(tasks.map((task) => task.project_id));
-    const usersMap = await fetchUsersMap(tasks.map((task) => task.assignee_id));
-    return tasks.map((task) => normalizeTask(task, projectsMap, usersMap));
+  getAll: async (filters: any = {}) => {
+    let query = supabase.from('tasks').select('*, project:project_id(*), assignee:assignee_id(*)');
+    if (filters.project_id) query = query.eq('project_id', filters.project_id);
+    if (filters.assignee_id) query = query.eq('assignee_id', filters.assignee_id);
+    if (filters.status) query = query.eq('status', filters.status);
+    const { data, error } = await query;
+    return handle(data, error);
   },
-
   getById: async (id: string) => {
-    const { data, error } = await withReadRetry(
-      () =>
-        supabase
-          .from('tasks')
-          .select('*')
-          .eq('id', id)
-          .single(),
-      'load task'
-    );
-
-    const task = handle<any>(data, error);
-    const [projectsMap, usersMap] = await Promise.all([
-      fetchProjectsMap([task.project_id]),
-      fetchUsersMap([task.assignee_id]),
-    ]);
-
-    return normalizeTask(task, projectsMap, usersMap);
-  },
-
-  create: async (task: Record<string, unknown>) => {
-    const { user } = (await getCurrentProfile()) as any;
-    const payload = { ...task, created_by: user.id };
-
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert([payload])
-      .select()
-      .single();
-
+    const { data, error } = await supabase.from('tasks').select('*, project:project_id(*), assignee:assignee_id(*)').eq('id', id).single();
     return handle(data, error);
   },
-
-  update: async (id: string, task: Record<string, unknown>) => {
-    const { data, error } = await supabase
-      .from('tasks')
-      .update(task)
-      .eq('id', id)
-      .select()
-      .single();
-
+  create: async (task: any) => {
+    const { data, error } = await supabase.from('tasks').insert([task]).select().single();
     return handle(data, error);
   },
-
+  update: async (id: string, task: any) => {
+    const { data, error } = await supabase.from('tasks').update(task).eq('id', id).select().single();
+    return handle(data, error);
+  },
   delete: async (id: string) => {
     const { error } = await supabase.from('tasks').delete().eq('id', id);
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   },
-
   getArchived: async () => {
-    let archivedData: any[] = [];
-    let archivedError: any = null;
-
-    const primary = await supabase
-      .from('tasks')
-      .select('*')
-      .in('status', ['done', 'postponed'])
-      .order('updated_at', { ascending: false });
-
-    if (primary.error) {
-      const fallback = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('is_archived', true)
-        .order('updated_at', { ascending: false });
-      archivedData = handle<any[]>(fallback.data, fallback.error);
-    } else {
-      archivedData = handle<any[]>(primary.data, primary.error);
-    }
-
-    const [projectsMap, usersMap] = await Promise.all([
-      fetchProjectsMap(archivedData.map((task) => task.project_id)),
-      fetchUsersMap(archivedData.map((task) => task.assignee_id)),
-    ]);
-
-    return archivedData.map((task) => normalizeTask(task, projectsMap, usersMap));
+    const { data, error } = await supabase.from('tasks').select('*, project:project_id(*), assignee:assignee_id(*)').eq('is_archived', true);
+    return handle(data, error);
   },
 };
 
 export const installationsApi = {
-  getAll: async (filters: Record<string, string> = {}) => {
-    const { data, error } = await withReadRetry(() => {
-      let query = supabase
-        .from('installations')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (filters.project_id) {
-        query = query.eq('project_id', filters.project_id);
-      }
-      if (filters.assignee_id) {
-        query = query.eq('assignee_id', filters.assignee_id);
-      }
-      if (filters.status) {
-        query = query.eq('status', filters.status);
-      }
-
-      return query;
-    }, 'load installations');
-
-    const installations = handle<any[]>(data, error);
-    const [projectsMap, usersMap] = await Promise.all([
-      fetchProjectsMap(installations.map((installation) => installation.project_id)),
-      fetchUsersMap(installations.map((installation) => installation.assignee_id)),
-    ]);
-
-    return installations.map((installation) =>
-      normalizeInstallation(installation, projectsMap, usersMap)
-    );
+  getAll: async (filters: any = {}) => {
+    let query = supabase.from('installations').select('*, project:project_id(*), assignee:assignee_id(*)');
+    if (filters.project_id) query = query.eq('project_id', filters.project_id);
+    if (filters.assignee_id) query = query.eq('assignee_id', filters.assignee_id);
+    if (filters.status) query = query.eq('status', filters.status);
+    const { data, error } = await query;
+    return handle(data, error);
   },
-
   getById: async (id: string) => {
-    const { data, error } = await withReadRetry(
-      () =>
-        supabase
-          .from('installations')
-          .select('*')
-          .eq('id', id)
-          .single(),
-      'load installation'
-    );
-
-    const installation = handle<any>(data, error);
-
-    const [projectsMap, usersMap] = await Promise.all([
-      fetchProjectsMap([installation.project_id]),
-      fetchUsersMap([installation.assignee_id]),
-    ]);
-
-    const { data: purchaseRequests, error: purchaseError } = await withReadRetry(
-      () =>
-        supabase
-          .from('purchase_requests')
-          .select('*')
-          .eq('installation_id', id)
-          .order('created_at', { ascending: false }),
-      'load installation purchase requests'
-    );
-
-    if (purchaseError) {
-      throw purchaseError;
-    }
-
-    const normalizedInstallation = normalizeInstallation(installation, projectsMap, usersMap);
-    const usersForPurchase = await fetchUsersMap(
-      (purchaseRequests || []).flatMap((request: any) => [request.created_by, request.approved_by])
-    );
-
-    return {
-      ...normalizedInstallation,
-      purchase_requests: (purchaseRequests || []).map((request: any) => ({
-        ...request,
-        creator: usersForPurchase[request.created_by] || null,
-        users: usersForPurchase[request.created_by] || null,
-        approved_by_user: usersForPurchase[request.approved_by] || null,
-      })),
-    };
-  },
-
-  create: async (installation: Record<string, unknown>) => {
-    const { user } = (await getCurrentProfile()) as any;
-    const baseTitle =
-      typeof installation.title === 'string' && installation.title.trim()
-        ? installation.title.trim()
-        : typeof installation.address === 'string' && installation.address.trim()
-          ? installation.address.trim()
-          : 'Монтаж';
-
-    const payload: Record<string, unknown> = {
-      ...installation,
-      title: baseTitle,
-      created_by: user.id,
-    };
-
-    if (!payload.scheduled_at && payload.planned_date) {
-      payload.scheduled_at = payload.planned_date;
-      delete payload.planned_date;
-    }
-
-    const { data, error } = await supabase
-      .from('installations')
-      .insert([payload])
-      .select()
-      .single();
-
+    const { data, error } = await supabase.from('installations').select('*, project:project_id(*), assignee:assignee_id(*), purchase_requests:purchase_requests(*)').eq('id', id).single();
     return handle(data, error);
   },
-
-  update: async (id: string, installation: Record<string, unknown>) => {
-    const payload = { ...installation } as Record<string, unknown>;
-    if (!payload.scheduled_at && payload.planned_date) {
-      payload.scheduled_at = payload.planned_date;
-      delete payload.planned_date;
-    }
-
-    const { data, error } = await supabase
-      .from('installations')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
-
+  create: async (inst: any) => {
+    const { data, error } = await supabase.from('installations').insert([inst]).select().single();
     return handle(data, error);
   },
-
+  update: async (id: string, inst: any) => {
+    const { data, error } = await supabase.from('installations').update(inst).eq('id', id).select().single();
+    return handle(data, error);
+  },
   delete: async (id: string) => {
     const { error } = await supabase.from('installations').delete().eq('id', id);
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   },
-
   getArchived: async () => {
-    let archivedData: any[] = [];
-
-    const primary = await supabase
-      .from('installations')
-      .select('*')
-      .in('status', ['done', 'postponed', 'received'])
-      .order('updated_at', { ascending: false });
-
-    if (primary.error) {
-      const fallback = await supabase
-        .from('installations')
-        .select('*')
-        .eq('is_archived', true)
-        .order('updated_at', { ascending: false });
-      archivedData = handle<any[]>(fallback.data, fallback.error);
-    } else {
-      archivedData = handle<any[]>(primary.data, primary.error);
-    }
-
-    const [projectsMap, usersMap] = await Promise.all([
-      fetchProjectsMap(archivedData.map((installation) => installation.project_id)),
-      fetchUsersMap(archivedData.map((installation) => installation.assignee_id)),
-    ]);
-
-    return archivedData.map((installation) =>
-      normalizeInstallation(installation, projectsMap, usersMap)
-    );
+    const { data, error } = await supabase.from('installations').select('*, project:project_id(*), assignee:assignee_id(*)').eq('is_archived', true);
+    return handle(data, error);
   },
 };
 
 export const purchaseRequestsApi = {
-  getAll: async (filters: Record<string, string> = {}) => {
-    const { data, error } = await withReadRetry(() => {
-      let query = supabase
-        .from('purchase_requests')
-        .select('id, status, created_at, updated_at, task_id, task_avr_id, installation_id, created_by, approved_by, comment, receipt_address, received_at')
-        .order('created_at', { ascending: false });
-
-      if (filters.status) {
-        query = query.eq('status', filters.status);
-      }
-      if (filters.created_by) {
-        query = query.eq('created_by', filters.created_by);
-      }
-
-      return query;
-    }, 'load purchase requests');
-
-    const requests = handle<any[]>(data, error);
-    if (requests.length === 0) {
-      return [];
-    }
-
-    const taskIds = uniqueIds(requests.map((request) => request.task_id));
-    const installationIds = uniqueIds(requests.map((request) => request.installation_id));
-    const usersMap = await fetchUsersMap(
-      requests.flatMap((request) => [request.created_by, request.approved_by])
-    );
-
-    const [tasksData, installationsData] = await Promise.all([
-      taskIds.length > 0
-        ? withReadRetry(
-            () => supabase.from('tasks').select('id, title, project_id').in('id', taskIds),
-            'load purchase request tasks'
-          )
-        : Promise.resolve({ data: [], error: null }),
-      installationIds.length > 0
-        ? withReadRetry(
-            () => supabase.from('installations').select('id, title, address, project_id').in('id', installationIds),
-            'load purchase request installations'
-          )
-        : Promise.resolve({ data: [], error: null }),
-    ]);
-
-    const tasksMap = toIdMap(handle<any[]>(tasksData.data, tasksData.error));
-    const installationsMap = toIdMap(handle<any[]>(installationsData.data, installationsData.error));
-
-    const projectsMap = await fetchProjectsMap(
-      [
-        ...Object.values(tasksMap).map((task: any) => task.project_id),
-        ...Object.values(installationsMap).map((installation: any) => installation.project_id),
-      ]
-    );
-
-    return requests.map((request) =>
-      normalizePurchaseRequest(request, tasksMap, installationsMap, projectsMap, usersMap)
-    );
+  getAll: async (filters: any = {}) => {
+    let query = supabase.from('purchase_requests').select('*, installation:installation_id(*), creator:creator_id(*), approved_by:approved_by_id(*)');
+    if (filters.status) query = query.eq('status', filters.status);
+    const { data, error } = await query;
+    return handle(data, error);
   },
-
   getById: async (id: string) => {
+<<<<<<< HEAD
     const { data, error } = await withReadRetry(
       () =>
         supabase
@@ -2099,70 +1073,43 @@ export const purchaseRequestsApi = {
       status: finalStatus,
       items: normalizedItems,
     };
+=======
+    const { data, error } = await supabase.from('purchase_requests').select('*, items:purchase_request_items(*), installation:installation_id(*), creator:creator_id(*)').eq('id', id).single();
+    return handle(data, error);
   },
-
-  updateStatus: async (id: string, status: string, comment?: string) => {
-    const { user } = await getCurrentProfile();
-    const payload: Record<string, unknown> = {
-      status,
-      comment,
-      updated_at: new Date().toISOString(),
-    };
-
-    if (status === 'approved' || status === 'rejected' || status === 'completed' || status === 'done' || status === 'received') {
-      payload.approved_by = user.id;
+  create: async (request: any) => {
+    const { items, ...reqData } = request;
+    const { data: pr, error: prError} = await supabase.from('purchase_requests').insert([reqData]).select().single();
+    if (prError) throw prError;
+    if (items && items.length > 0) {
+      const itemsToInsert = items.map((item: any) => ({ ...item, purchase_request_id: pr.id }));
+      const { error: itemsError } = await supabase.from('purchase_request_items').insert(itemsToInsert);
+      if (itemsError) throw itemsError;
     }
-
-    const { data, error } = await supabase
-      .from('purchase_requests')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
-
+    return pr;
+>>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
+  },
+  updateStatus: async (id: string, status: string, comment?: string, receipt_address?: string, received_at?: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const update: any = { status, comment, receipt_address, received_at };
+    if (status === 'approved' || status === 'completed') update.approved_by_id = user?.id;
+    const { data, error } = await supabase.from('purchase_requests').update(update).eq('id', id).select().single();
     return handle(data, error);
   },
 };
 
 export const materialsApi = {
   getAll: async () => {
-    const { data, error } = await supabase
-      .from('materials')
-      .select('*')
-      .order('name');
-
+    const { data, error } = await supabase.from('materials').select('*');
     return handle(data, error);
   },
-
   search: async (searchTerm: string) => {
-    const { data, error } = await supabase
-      .from('materials')
-      .select('*')
-      .ilike('name', `%${searchTerm}%`)
-      .order('name');
-
-    return handle(data, error);
-  },
-
-  create: async (payload: { name: string; category?: string; default_unit?: string }) => {
-    if (!payload.name?.trim()) {
-      throw new Error('Название материала обязательно');
-    }
-
-    const { data, error } = await supabase
-      .from('materials')
-      .insert({
-        name: payload.name.trim(),
-        category: payload.category?.trim() || 'Расходники',
-        default_unit: payload.default_unit || 'pcs',
-      })
-      .select()
-      .single();
-
+    const { data, error } = await supabase.from('materials').select('*').ilike('name', `%${searchTerm}%`);
     return handle(data, error);
   },
 };
 
+<<<<<<< HEAD
 const resolveWarehouseMaterialId = (row: Record<string, any>) =>
   String(
     row.material_id ??
@@ -2930,41 +1877,16 @@ export const warehouseApi = {
 
 type CommentEntityType = 'task' | 'installation';
 
+=======
+// Comments API
+>>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
 export const commentsApi = {
-  getByEntity: async (entityId: string, entityType: CommentEntityType) => {
-    const { data, error } = await supabase
-      .from('comments')
-      .select('*')
-      .eq('entity_id', entityId)
-      .eq('entity_type', entityType)
-      .order('created_at', { ascending: true });
-
-    const comments = handle<any[]>(data, error);
-    const usersMap = await fetchUsersMap(comments.map((comment) => comment.user_id));
-
-    return comments.map((comment) => ({
-      ...comment,
-      author: comment.user_id ? usersMap[comment.user_id] || null : null,
-    }));
-  },
-
-  create: async (entityId: string, content: string, entityType: CommentEntityType) => {
-    const { user } = await getCurrentProfile();
-    const { data, error } = await supabase
-      .from('comments')
-      .insert([
-        {
-          entity_id: entityId,
-          entity_type: entityType,
-          user_id: user.id,
-          content,
-        },
-      ])
-      .select()
-      .single();
-
+  getByTask: async (taskId: string, taskType: 'task' | 'installation' = 'task') => {
+    const table = taskType === 'task' ? 'task_comments' : 'installation_comments';
+    const { data, error } = await supabase.from(table).select('*, author:author_id(*)').eq('task_id', taskId).order('created_at', { ascending: true });
     return handle(data, error);
   },
+<<<<<<< HEAD
 
   subscribe: (entityId: string, entityType: CommentEntityType, onChange: () => void) =>
     supabase
@@ -5080,677 +4002,95 @@ export const jobsApi = {
     const { data, error } = await withReadRetry(() => query, 'load jobs');
     const jobs = handle<any[]>(data, error);
     return normalizeJobList(jobs);
-  },
-
-  startInChat: async (payload: {
-    chat_id: string;
-    address: string;
-    district?: string;
-    sk_name?: string;
-    sk_count?: number;
-    servisnyy_id?: string;
-    lat?: number | null;
-    lng?: number | null;
-    planned_duration_hours?: number | null;
-  }) => {
-    const address = payload.address?.trim();
-    if (!address) {
-      throw new Error('Адрес обязателен');
-    }
-
-    const { user } = await getCurrentProfile();
-    const nowIso = new Date().toISOString();
-    const plannedDuration =
-      typeof payload.planned_duration_hours === 'number' && Number.isFinite(payload.planned_duration_hours)
-        ? Math.max(1, Math.round(payload.planned_duration_hours))
-        : null;
-
-    const jobPayload = cleanPayload({
-      chat_id: payload.chat_id,
-      address,
-      district: payload.district?.trim() || null,
-      sk_name: payload.sk_name?.trim() || null,
-      sk_count: typeof payload.sk_count === 'number' ? payload.sk_count : null,
-      servisnyy_id: payload.servisnyy_id?.trim() || null,
-      lat: typeof payload.lat === 'number' ? payload.lat : null,
-      lng: typeof payload.lng === 'number' ? payload.lng : null,
-      engineer_id: user.id,
-      status: 'active',
-      started_at: nowIso,
-      planned_duration_hours: plannedDuration,
-    });
-
-    const created = await insertJobRecord(jobPayload);
-    const createdJobId = String((created as Record<string, unknown> | null)?.id || '');
-
-    await insertChatMessage({
-      chat_id: payload.chat_id,
-      userId: user.id,
-      content: { text: `📍 Начал работу по адресу: ${address}` },
-      messageType: 'job',
-      jobId: createdJobId || null,
-    });
-
-    return created;
-  },
-
-  confirm: async (jobId: string) => {
-    const { user } = await getCurrentProfile();
-    const { data, error } = await supabase
-      .from('jobs')
-      .update({ confirmed_by: user.id })
-      .eq('id', jobId)
-      .select('*')
-      .single();
-
-    return handle<any>(data, error);
-  },
-
-  finish: async (jobId: string) => {
-    const { data, error } = await supabase
-      .from('jobs')
-      .update({ status: 'done', finished_at: new Date().toISOString() })
-      .eq('id', jobId)
-      .select('*')
-      .single();
-
-    return handle<any>(data, error);
-  },
-
-  remove: async (jobId: string) => {
-    const cleanupMessages = await supabase.from('messages').delete().eq('job_id', jobId);
-    if (cleanupMessages.error && !isColumnMissingError(cleanupMessages.error)) {
-      console.warn('Failed to delete messages for job:', cleanupMessages.error);
-    }
-
-    const { error } = await supabase.from('jobs').delete().eq('id', jobId);
-    if (error) {
-      throw error;
-    }
-  },
-
-  subscribeAll: (onChange: (payload: Record<string, unknown>) => void) =>
-    supabase
-      .channel(`jobs-all-${Date.now()}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'jobs',
-        },
-        (payload) => onChange(payload as Record<string, unknown>)
-      )
-      .subscribe(),
-
-  subscribeChat: (chatId: string, onChange: () => void) =>
-    supabase
-      .channel(`jobs-chat-${chatId}-${Date.now()}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'jobs',
-          filter: `chat_id=eq.${chatId}`,
-        },
-        () => onChange()
-      )
-      .subscribe(),
-};
-
-const normalizeAvrTask = (task: any, projectsMap: Record<string, any>, usersMap: Record<string, any>) => {
-  const executorId = task.executor_id || task.assignee_id || null;
-  const project = task.project_id ? projectsMap[task.project_id] || null : null;
-  const executor = executorId ? usersMap[executorId] || null : null;
-  const creator = task.created_by ? usersMap[task.created_by] || null : null;
-
-  return {
-    ...task,
-    project,
-    projects: project,
-    executor,
-    assignee: executor,
-    users: executor,
-    creator,
-  };
-};
-
-const AVR_ACTIVE_STATUSES = ['completed', 'cancelled'];
-
-export const avrApi = {
-  getAll: async (filters: { executor_id?: string; include_completed?: boolean } = {}) => {
-    const { data, error } = await withReadRetry(() => {
-      let query = supabase.from('tasks_avr').select('*').order('created_at', { ascending: false });
-
-      if (filters.executor_id) {
-        query = query.eq('executor_id', filters.executor_id);
-      }
-
-      if (!filters.include_completed) {
-        query = query.not('status', 'in', `(${AVR_ACTIVE_STATUSES.join(',')})`);
-      }
-
-      return query;
-    }, 'load avr tasks');
-
-    const tasks = handle<any[]>(data, error);
-    const projectsMap = await fetchProjectsMap(tasks.map((task) => task.project_id));
-    const usersMap = await fetchUsersMap(
-      tasks.flatMap((task) => [task.executor_id, task.assignee_id, task.created_by])
-    );
-
-    return tasks.map((task) => normalizeAvrTask(task, projectsMap, usersMap));
-  },
-
-  getById: async (id: string) => {
-    const { data, error } = await withReadRetry(
-      () =>
-        supabase
-          .from('tasks_avr')
-          .select('*')
-          .eq('id', id)
-          .single(),
-      'load avr task'
-    );
-
-    const task = handle<any>(data, error);
-    const [projectsMap, usersMap] = await Promise.all([
-      fetchProjectsMap([task.project_id]),
-      fetchUsersMap([task.executor_id, task.assignee_id, task.created_by]),
-    ]);
-
-    const normalizedTask = normalizeAvrTask(task, projectsMap, usersMap);
-    const { data: purchaseRequests, error: purchaseRequestsError } = await withReadRetry(
-      () =>
-        supabase
-          .from('purchase_requests')
-          .select('*')
-          .eq('task_avr_id', id)
-          .order('created_at', { ascending: false }),
-      'load avr purchase requests'
-    ).catch((reason) => {
-      if (isColumnMissingError(reason)) {
-        return { data: [], error: null };
-      }
-      throw reason;
-    });
-
-    if (purchaseRequestsError) {
-      throw purchaseRequestsError;
-    }
-
-    const purchaseUsersMap = await fetchUsersMap(
-      (purchaseRequests || []).flatMap((request: any) => [request.created_by, request.approved_by])
-    );
-
-    return {
-      ...normalizedTask,
-      purchase_requests: (purchaseRequests || []).map((request: any) => ({
-        ...request,
-        creator: request.created_by ? purchaseUsersMap[request.created_by] || null : null,
-        approved_by_user: request.approved_by ? purchaseUsersMap[request.approved_by] || null : null,
-      })),
-    };
-  },
-
-  create: async (payload: {
-    title: string;
-    type?: string;
-    description?: string | null;
-    address_text?: string | null;
-    date_from?: string | null;
-    date_to?: string | null;
-    project_id?: string | null;
-    executor_id?: string | null;
-  }) => {
-    const title = payload.title?.trim();
-    if (!title) {
-      throw new Error('Название заявки обязательно');
-    }
-
-    const { user } = await getCurrentProfile();
-    const nowIso = new Date().toISOString();
-    const assignee = payload.executor_id || user.id;
-
-    const cleanPayload = (value: Record<string, unknown>) =>
-      Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined));
-
-    const basePayload = cleanPayload({
-      title,
-      type: payload.type || 'AVR',
-      description: payload.description?.trim() || null,
-      address_text: payload.address_text?.trim() || null,
-      date_from: payload.date_from || null,
-      date_to: payload.date_to || null,
-      project_id: payload.project_id || null,
-      executor_id: assignee,
-      assignee_id: assignee,
-      status: 'new',
-      created_by: user.id,
-      updated_at: nowIso,
-    });
-
-    const attempts = [
-      basePayload,
-      cleanPayload({ ...basePayload, assignee_id: undefined }),
-      cleanPayload({ ...basePayload, executor_id: undefined }),
-      cleanPayload({ ...basePayload, assignee_id: undefined, executor_id: undefined }),
-      cleanPayload({ ...basePayload, updated_at: undefined }),
-      cleanPayload({ ...basePayload, created_by: undefined }),
-    ];
-
-    let lastError: unknown;
-    for (const attempt of attempts) {
-      const { data, error } = await supabase.from('tasks_avr').insert(attempt).select().single();
-      if (!error) {
-        return data;
-      }
-
-      lastError = error;
-      if (!isColumnMissingError(error)) {
-        throw error;
-      }
-    }
-
-    throw lastError ?? new Error('Не удалось создать заявку АВР');
-  },
-
-  updateStatus: async (id: string, status: string) => {
-    const { user } = await getCurrentProfile();
-    const payload = {
-      status,
-      updated_at: new Date().toISOString(),
-      status_changed_by: user.id,
-      status_changed_at: new Date().toISOString(),
-    };
-
-    const { data, error } = await supabase
-      .from('tasks_avr')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
-
+=======
+  create: async (taskId: string, content: string, taskType: 'task' | 'installation' = 'task') => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+    const table = taskType === 'task' ? 'task_comments' : 'installation_comments';
+    const { data, error } = await supabase.from(table).insert([{ task_id: taskId, author_id: user.id, content }]).select().single();
     return handle(data, error);
   },
 };
 
-const toMonthRange = (year: number, monthZeroBased: number) => {
-  const start = new Date(year, monthZeroBased, 1, 0, 0, 0, 0);
-  const end = new Date(year, monthZeroBased + 1, 0, 23, 59, 59, 999);
-  const day = (value: Date) =>
-    `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(
-      value.getDate()
-    ).padStart(2, '0')}`;
-
-  return {
-    startDate: day(start),
-    endDate: day(end),
-    start: start.toISOString(),
-    end: end.toISOString(),
-  };
-};
-
-export const calendarApi = {
-  getMonthData: async (
-    year: number,
-    monthZeroBased: number,
-    filters: { assignee_id?: string; executor_id?: string } = {}
-  ) => {
-    const { start, end } = toMonthRange(year, monthZeroBased);
-
-    let tasksQuery = supabase
-      .from('tasks')
-      .select('id, title, status, due_date, assignee_id')
-      .gte('due_date', start)
-      .lte('due_date', end);
-    let installationsQuery = supabase
-      .from('installations')
-      .select('id, title, status, scheduled_at, assignee_id, address')
-      .gte('scheduled_at', start)
-      .lte('scheduled_at', end);
-    let avrQuery = supabase
-      .from('tasks_avr')
-      .select('id, title, status, type, date_from, date_to, executor_id')
-      .lte('date_from', end)
-      .gte('date_to', start);
-
-    if (filters.assignee_id) {
-      tasksQuery = tasksQuery.eq('assignee_id', filters.assignee_id);
-      installationsQuery = installationsQuery.eq('assignee_id', filters.assignee_id);
-    }
-    if (filters.executor_id) {
-      avrQuery = avrQuery.eq('executor_id', filters.executor_id);
-    }
-
-    const [tasksResult, installationsResult, avrResult] = await Promise.all([
-      withReadRetry(() => tasksQuery, 'load month tasks'),
-      withReadRetry(() => installationsQuery, 'load month installations'),
-      withReadRetry(() => avrQuery, 'load month avr'),
-    ]);
-
-    return {
-      tasks: handle<any[]>(tasksResult.data, tasksResult.error),
-      installations: handle<any[]>(installationsResult.data, installationsResult.error),
-      avr: handle<any[]>(avrResult.data, avrResult.error),
-    };
+// Chats API
+export const chatsApi = {
+  getAll: async () => {
+    const { data, error } = await supabase.from('chats').select('*, last_message:last_message_id(*), participants:chat_participants(user:user_id(*))').order('updated_at', { ascending: false });
+    return handle(data, error);
+>>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
+  },
+  getById: async (id: string) => {
+    const { data, error } = await supabase.from('chats').select('*').eq('id', id).single();
+    return handle(data, error);
+  },
+  createChat: async (name: string, type: string = 'direct') => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+    const { data, error } = await supabase.from('chats').insert([{ name, type }]).select().single();
+    if (error) throw error;
+    // Add current user as participant
+    await supabase.from('chat_participants').insert([{ chat_id: data.id, user_id: user.id }]);
+    return data;
+  },
+  getMessages: async (chatId: string) => {
+    const { data, error } = await supabase.from('chat_messages').select('*, sender:sender_id(*)').eq('chat_id', chatId).order('created_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+  sendMessage: async (chatId: string, content: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+    const { data, error } = await supabase.from('chat_messages').insert([{ chat_id: chatId, sender_id: user.id, content }]).select().single();
+    if (error) throw error;
+    // Update chat last_message
+    await supabase.from('chats').update({ last_message_id: data.id, updated_at: new Date().toISOString() }).eq('id', chatId);
+    return data;
+  },
+  subscribeToMessages: (chatId: string, callback: (msg: any) => void) => {
+    return supabase.channel(`chat:${chatId}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `chat_id=eq.${chatId}` }, (payload) => {
+      callback(payload.new);
+    }).subscribe();
   },
 };
 
-const normalizeEquipmentPower = (item: any) => {
-  const effectivePower =
-    typeof item.effective_power_watts === 'number'
-      ? item.effective_power_watts
-      : typeof item.power_watts === 'number'
-        ? item.power_watts
-        : null;
-
-  return {
-    ...item,
-    effective_power_watts: effectivePower,
-    power_source:
-      item.power_source ||
-      (item.effective_power_watts != null || item.power_watts != null ? 'sats' : null),
-  };
+// Tasks AVR API
+export const tasksAvrApi = {
+  getAll: async (status?: string) => {
+    let query = supabase.from('tasks_avr').select('*');
+    if (status) query = query.eq('status', status);
+    const { data, error } = await query;
+    return handle(data, error);
+  },
+  getById: async (id: string) => {
+    const { data, error } = await supabase.from('tasks_avr').select('*').eq('id', id).single();
+    return handle(data, error);
+  },
+  create: async (task: any) => {
+    const { data, error } = await supabase.from('tasks_avr').insert([task]).select().single();
+    return handle(data, error);
+  },
+  update: async (id: string, updates: any) => {
+    const { data, error } = await supabase.from('tasks_avr').update(updates).eq('id', id).select().single();
+    return handle(data, error);
+  },
 };
 
-const loadSiteEquipment = async (siteId: string) => {
-  const fromPowerView = await withReadRetry(
-    () =>
-      supabase
-        .from('site_equipment_with_power')
-        .select('*')
-        .eq('site_id', siteId)
-        .order('device_category'),
-    'load site equipment (with power view)'
-  ).catch((reason) => {
-    if (isRelationMissingError(reason)) {
-      return { data: null, error: reason };
-    }
-    throw reason;
-  });
-
-  if (fromPowerView.data) {
-    return handle<any[]>(fromPowerView.data, null).map(normalizeEquipmentPower);
-  }
-
-  const fromCache = await withReadRetry(
-    () =>
-      supabase
-        .from('site_equipment_cache')
-        .select('*')
-        .eq('site_id', siteId)
-        .order('device_category'),
-    'load site equipment (cache)'
-  );
-
-  return handle<any[]>(fromCache.data, fromCache.error).map(normalizeEquipmentPower);
-};
-
-const loadSiteHeatSummary = async (siteId: string, equipment: any[]) => {
-  const fromView = await withReadRetry(
-    () =>
-      supabase
-        .from('site_heat_summary')
-        .select('*')
-        .eq('site_id', siteId)
-        .single(),
-    'load site heat summary'
-  ).catch((reason) => {
-    if (isRelationMissingError(reason) || (reason as any)?.code === 'PGRST116') {
-      return { data: null, error: null };
-    }
-    throw reason;
-  });
-
-  if (fromView.data) {
-    return fromView.data;
-  }
-
-  const totalPower = equipment.reduce((sum, item) => {
-    return sum + (typeof item.effective_power_watts === 'number' ? item.effective_power_watts : 0);
-  }, 0);
-
-  return {
-    site_id: siteId,
-    total_power_watts: Math.round(totalPower),
-    heat_kw: Number((totalPower / 1000).toFixed(2)),
-    heat_kcal_per_hour: Number((totalPower * 0.859845).toFixed(2)),
-  };
-};
-
-const SITES_SYNC_SECRET = 'korneo_sync_2026';
-
-const getSessionAccessToken = async () => {
-  const sessionResponse = await withTimeout(supabase.auth.getSession(), 'restore session for edge call', 6000);
-  const sessionError = (sessionResponse as any)?.error;
-  if (sessionError) {
-    throw new Error(sessionError.message || 'Failed to restore session');
-  }
-
-  const token = (sessionResponse as any)?.data?.session?.access_token;
-  if (!token) {
-    throw new Error('Authorization is required');
-  }
-
-  return token as string;
-};
-
-const parseEdgePayload = async (response: Response): Promise<Record<string, any>> => {
-  const raw = await response.text();
-  if (!raw) return {};
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : { raw: parsed };
-  } catch {
-    return { raw };
-  }
-};
-
-const callEdgeFunction = async (
-  name: string,
-  method: 'POST' | 'PATCH',
-  payload: Record<string, unknown>
-) => {
-  const token = await getSessionAccessToken();
-  const response = await withTimeout(
-    fetch(`${supabaseUrl}/functions/v1/${name}`, {
-      method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        ...(name === 'sync-sites' ? { 'x-sync-secret': SITES_SYNC_SECRET } : {}),
-      },
-      body: JSON.stringify(payload),
-    }),
-    `${name} edge call`,
-    90000
-  );
-
-  const parsed = await parseEdgePayload(response);
-  if (!response.ok) {
-    throw new Error(
-      parsed.error ||
-        parsed.message ||
-        (typeof parsed.raw === 'string' ? parsed.raw : '') ||
-        `${name} failed with status ${response.status}`
-    );
-  }
-
-  return parsed;
-};
-
+// Sites API
 export const sitesApi = {
   getAll: async () => {
-    const { data, error } = await withReadRetry(
-      () =>
-        supabase
-          .from('sites_cache')
-          .select('id, emts_id, emts_code, name, address, type, segment, status, district, synced_at')
-          .order('address', { ascending: true }),
-      'load sites list'
-    );
-
-    return handle<any[]>(data, error);
+    const { data, error } = await supabase.from('sites').select('*');
+    return handle(data, error);
   },
-
   getById: async (id: string) => {
-    const { data: site, error: siteError } = await withReadRetry(
-      () =>
-        supabase
-          .from('sites_cache')
-          .select('*')
-          .eq('id', id)
-          .single(),
-      'load site'
-    );
-
-    const normalizedSite = handle<any>(site, siteError);
-    const equipment = await loadSiteEquipment(id);
-    const heat = await loadSiteHeatSummary(id, equipment);
-
-    return {
-      site: normalizedSite,
-      equipment,
-      heat,
-    };
+    const { data, error } = await supabase.from('sites').select('*').eq('id', id).single();
+    return handle(data, error);
   },
-
-  syncNow: async () => {
-    return callEdgeFunction('sync-sites', 'POST', {});
+  create: async (site: any) => {
+    const { data, error } = await supabase.from('sites').insert([site]).select().single();
+    return handle(data, error);
   },
-
-  setManualPower: async (model: string, powerWatts: number) => {
-    const normalizedModel = model.trim();
-    if (!normalizedModel) {
-      throw new Error('Model is required');
-    }
-    if (!Number.isFinite(powerWatts) || powerWatts <= 0) {
-      throw new Error('Power must be greater than 0');
-    }
-
-    return callEdgeFunction('lookup-power', 'PATCH', {
-      model: normalizedModel,
-      power_watts: powerWatts,
-    });
-  },
-};
-
-const ATSS_TABLES = ['atss_q1_2026', 'atss'];
-const ATSS_BATCH_SIZE = 50;
-
-const loadAtssFromTable = async (table: string) => {
-  const orderedResult = await withReadRetry(
-    () =>
-      supabase
-        .from(table)
-        .select('*')
-        .order('planovaya_data_1_kv_2026', { ascending: true, nullsFirst: false })
-        .limit(2000),
-    `load atss from ${table}`
-  ).catch(async (reason) => {
-    if (!isColumnMissingError(reason)) {
-      throw reason;
-    }
-
-    return withReadRetry(
-      () =>
-        supabase
-          .from(table)
-          .select('*')
-          .limit(2000),
-      `load atss from ${table} (fallback)`
-    );
-  });
-
-  return handle<any[]>(orderedResult.data, orderedResult.error);
-};
-
-const upsertAtssBatch = async (
-  batch: Record<string, unknown>[],
-  preferredTable?: string | null
-) => {
-  const tables = preferredTable
-    ? [preferredTable, ...ATSS_TABLES.filter((table) => table !== preferredTable)]
-    : [...ATSS_TABLES];
-
-  let relationError: unknown;
-  for (const table of tables) {
-    const { error } = await supabase
-      .from(table)
-      .upsert(batch, { onConflict: 'id_ploshadki', ignoreDuplicates: false });
-
-    if (!error) {
-      return table;
-    }
-
-    if (isRelationMissingError(error)) {
-      relationError = error;
-      continue;
-    }
-
-    throw error;
-  }
-
-  throw relationError ?? new Error('ATSS table is not available');
-};
-
-export const atssApi = {
-  getAll: async () => {
-    let lastError: unknown;
-    for (const table of ATSS_TABLES) {
-      try {
-        return await loadAtssFromTable(table);
-      } catch (error) {
-        lastError = error;
-        if (!isRelationMissingError(error)) {
-          throw error;
-        }
-      }
-    }
-
-    if (lastError) {
-      throw lastError;
-    }
-    return [];
-  },
-
-  upsertBatches: async (
-    records: Record<string, unknown>[],
-    options: {
-      batchSize?: number;
-      onProgress?: (done: number, total: number, errorsCount: number) => void;
-    } = {}
-  ) => {
-    const total = records.length;
-    const batchSize = Math.max(1, options.batchSize ?? ATSS_BATCH_SIZE);
-    let preferredTable: string | null = ATSS_TABLES[0];
-    let done = 0;
-    const errors: Array<{ from: number; to: number; message: string }> = [];
-
-    for (let index = 0; index < total; index += batchSize) {
-      const batch = records.slice(index, index + batchSize);
-      try {
-        preferredTable = await upsertAtssBatch(batch, preferredTable);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown ATSS upload error';
-        errors.push({
-          from: index + 1,
-          to: index + batch.length,
-          message,
-        });
-      }
-
-      done += batch.length;
-      options.onProgress?.(done, total, errors.length);
-    }
-
-    return {
-      done,
-      total,
-      errors,
-      table: preferredTable,
-    };
+  update: async (id: string, updates: any) => {
+    const { data, error } = await supabase.from('sites').update(updates).eq('id', id).select().single();
+    return handle(data, error);
   },
 };

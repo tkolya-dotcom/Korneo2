@@ -35,7 +35,6 @@ temp/
 # Сборка (если будет)
 dist/
 build/
-apps/mobile/android/
 
 # Тесты
 coverage/

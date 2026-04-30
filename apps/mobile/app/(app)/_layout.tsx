@@ -1,146 +1,148 @@
-import { Redirect, Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Platform, View, useWindowDimensions } from 'react-native';
-import { COLORS } from '@/src/theme/colors';
+import { Tabs } from 'expo-router';
+import { Text, View } from 'react-native';
 import { useAuth } from '@/src/providers/AuthProvider';
-import LoadingVideo from '@/src/components/LoadingVideo';
 
-type TabIconName = keyof typeof Ionicons.glyphMap;
-
-const labels = {
-  home: '\u0413\u043b\u0430\u0432\u043d\u0430\u044f',
-  projects: '\u041f\u0440\u043e\u0435\u043a\u0442\u044b',
-  tasks: '\u0417\u0430\u0434\u0430\u0447\u0438',
-  installations: '\u041c\u043e\u043d\u0442\u0430\u0436\u0438',
-  requests: '\u0417\u0430\u044f\u0432\u043a\u0438',
-  chats: '\u0427\u0430\u0442\u044b',
+// Cyberpunk theme - как в веб-приложении
+const THEME = {
+  bg: '#0A0A0F',
+  card: '#1A1A2E',
+  accent: '#00D9FF',
+  text: '#E0E0E0',
+  sub: '#8892a0',
+  border: 'rgba(0, 217, 255, 0.15)',
+  green: '#00FF88',
 };
 
-const tabIcon =
-  (name: TabIconName) =>
-  ({ color, size }: { color: string; size: number }) =>
-    <Ionicons name={name} color={color} size={size} />;
-
 export default function AppTabsLayout() {
-  const { loading, session, user } = useAuth();
-  const { width, height } = useWindowDimensions();
-  const isLandscape = width > height;
-  const hasActiveSession = Boolean(session?.access_token || user?.id);
-
-  if (loading) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg }}>
-        <LoadingVideo size={210} />
-      </View>
-    );
-  }
-
-  if (!hasActiveSession) {
-    return <Redirect href="/auth" />;
-  }
+  const { canCreateTasks, isManagerOrHigher } = useAuth();
 
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: COLORS.card },
-        headerTintColor: COLORS.accent,
-        headerTitleStyle: { fontWeight: '700', color: COLORS.text },
-        headerShadowVisible: false,
-        tabBarHideOnKeyboard: true,
-        tabBarShowLabel: !isLandscape,
-        tabBarLabelPosition: 'below-icon',
-        tabBarAllowFontScaling: false,
+        headerStyle: { backgroundColor: THEME.card },
+        headerTintColor: THEME.accent,
+        headerTitleStyle: { fontWeight: '600', letterSpacing: 0.5 },
         tabBarStyle: {
-          backgroundColor: COLORS.card,
-          borderTopColor: COLORS.border,
+          backgroundColor: THEME.card,
+          borderTopColor: THEME.border,
           borderTopWidth: 1,
-          height: isLandscape ? (Platform.OS === 'ios' ? 58 : 52) : Platform.OS === 'ios' ? 80 : 62,
-          paddingTop: isLandscape ? 2 : 4,
-          paddingBottom: isLandscape ? 2 : Platform.OS === 'ios' ? 14 : 6,
+          paddingTop: 4,
+          height: 60,
         },
-        tabBarItemStyle: { paddingVertical: isLandscape ? 0 : 2, minWidth: 0, justifyContent: 'center' },
-        tabBarIconStyle: { marginTop: 0 },
-        tabBarActiveTintColor: COLORS.accent,
-        tabBarInactiveTintColor: COLORS.sub,
-        tabBarLabelStyle: { fontSize: 10, lineHeight: 12, fontWeight: '700', marginBottom: 1 },
+        tabBarActiveTintColor: THEME.accent,
+        tabBarInactiveTintColor: THEME.sub,
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', marginBottom: 4 },
       }}
     >
+      {/* Главная */}
       <Tabs.Screen
         name="index"
         options={{
-          title: labels.home,
-          tabBarLabel: labels.home,
-          tabBarIcon: tabIcon('home-outline'),
-        }}
-      />
-      <Tabs.Screen
-        name="projects"
-        options={{
-          title: labels.projects,
-          tabBarLabel: labels.projects,
-          tabBarIcon: tabIcon('folder-open-outline'),
-        }}
-      />
-      <Tabs.Screen
-        name="tasks"
-        options={{
-          title: labels.tasks,
-          tabBarLabel: labels.tasks,
-          tabBarIcon: tabIcon('checkbox-outline'),
-        }}
-      />
-      <Tabs.Screen
-        name="installations"
-        options={{
-          title: labels.installations,
-          tabBarLabel: labels.installations,
-          tabBarIcon: tabIcon('construct-outline'),
-        }}
-      />
-      <Tabs.Screen
-        name="purchase-requests"
-        options={{
-          title: labels.requests,
-          tabBarLabel: labels.requests,
-          tabBarIcon: tabIcon('cart-outline'),
-        }}
-      />
-      <Tabs.Screen
-        name="messenger"
-        options={{
-          title: labels.chats,
-          tabBarLabel: labels.chats,
-          tabBarIcon: tabIcon('chatbubbles-outline'),
+          title: 'Главная',
+          tabBarLabel: 'Главная',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🏠</Text>,
         }}
       />
 
-      <Tabs.Screen name="archive" options={{ href: null }} />
-      <Tabs.Screen name="project" options={{ href: null }} />
-      <Tabs.Screen name="project/[id]" options={{ href: null }} />
-      <Tabs.Screen name="project/create" options={{ href: null }} />
-      <Tabs.Screen name="task" options={{ href: null }} />
-      <Tabs.Screen name="task/[id]" options={{ href: null }} />
-      <Tabs.Screen name="task/create/index" options={{ href: null }} />
-      <Tabs.Screen name="task/[id]/comments/index" options={{ href: null }} />
-      <Tabs.Screen name="installation" options={{ href: null }} />
-      <Tabs.Screen name="installation/[id]" options={{ href: null }} />
-      <Tabs.Screen name="installation/create/index" options={{ href: null }} />
-      <Tabs.Screen name="installation/[id]/comments/index" options={{ href: null }} />
-      <Tabs.Screen name="purchase-request" options={{ href: null }} />
-      <Tabs.Screen name="purchase-request/[id]" options={{ href: null }} />
-      <Tabs.Screen name="purchase-request/create" options={{ href: null }} />
-      <Tabs.Screen name="profile" options={{ href: null }} />
-      <Tabs.Screen name="user/[id]" options={{ href: null }} />
-      <Tabs.Screen name="chat/[id]" options={{ href: null }} />
-      <Tabs.Screen name="warehouse" options={{ href: null }} />
-      <Tabs.Screen name="avr" options={{ href: null }} />
-      <Tabs.Screen name="avr/create" options={{ href: null }} />
-      <Tabs.Screen name="avr/[id]" options={{ href: null }} />
-      <Tabs.Screen name="calendar" options={{ href: null }} />
-      <Tabs.Screen name="sites" options={{ href: null }} />
-      <Tabs.Screen name="site/[id]" options={{ href: null }} />
-      <Tabs.Screen name="users" options={{ href: null }} />
-      <Tabs.Screen name="atss" options={{ href: null }} />
+      {/* Проекты */}
+      <Tabs.Screen
+        name="projects"
+        options={{
+          title: 'Проекты',
+          tabBarLabel: 'Проекты',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>📁</Text>,
+        }}
+      />
+
+      {/* Задачи */}
+      <Tabs.Screen
+        name="task"
+        options={{
+          title: 'Задачи',
+          tabBarLabel: 'Задачи',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>✅</Text>,
+        }}
+      />
+
+      {/* Монтажи */}
+      <Tabs.Screen
+        name="installation"
+        options={{
+          title: 'Монтажи',
+          tabBarLabel: 'Монтажи',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🔧</Text>,
+        }}
+      />
+
+      {/* АВР - только для инженеров и менеджеров */}
+      {canCreateTasks && (
+        <Tabs.Screen
+          name="avr"
+          options={{
+            title: 'АВР',
+            tabBarLabel: 'АВР',
+            tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>⚡</Text>,
+          }}
+        />
+      )}
+
+      {/* Чат - основной функционал */}
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: 'Чат',
+          tabBarLabel: 'Чат',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>💬</Text>,
+        }}
+      />
+
+      {/* Склад - только для менеджеров */}
+      {isManagerOrHigher && (
+        <Tabs.Screen
+          name="warehouse"
+          options={{
+            title: 'Склад',
+            tabBarLabel: 'Склад',
+            tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>📦</Text>,
+          }}
+        />
+      )}
+
+      {/* Заявки */}
+      <Tabs.Screen
+        name="users"
+        options={{
+          title: 'Люди',
+          tabBarLabel: 'Люди',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>👥</Text>,
+        }}
+      />
+
+      {/* Площадки */}
+      <Tabs.Screen
+        name="sites"
+        options={{
+          title: 'Площадки',
+          tabBarLabel: 'Площадки',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🗺️</Text>,
+        }}
+      />
+
+      {/* Профиль */}
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Профиль',
+          tabBarLabel: 'Профиль',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>👤</Text>,
+        }}
+      />
+
+      {/* === Скрытые экраны === */}
+      <Tabs.Screen
+        name="project"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }
