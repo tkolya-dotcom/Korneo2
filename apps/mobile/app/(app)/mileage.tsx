@@ -17,9 +17,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { mileageApi, mileagePeriods, parseMileagePeriod, MileagePeriod, MileageReport, MileageSummaryCards, MileageSegment } from '@/src/lib/mileage';
 import { usersApi } from '@/src/lib/supabase';
 import AddressSuggestionCard from '@/src/components/AddressSuggestionCard';
+import { syncDatabaseInBackground } from '@/src/lib/offlineData';
 
 const C = {
   bg: '#0A0A0F',
@@ -261,6 +263,14 @@ export default function MileageScreen() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadData();
+      void syncDatabaseInBackground();
+      return undefined;
+    }, [loadData])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);

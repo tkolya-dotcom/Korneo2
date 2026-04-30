@@ -1,14 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, RefreshControl, ActivityIndicator } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/src/providers/AuthProvider';
+import { useFocusEffect } from '@react-navigation/native';
 import { chatsApi } from '@/src/lib/supabase';
+import { getCachedTable, syncDatabaseInBackground } from '@/src/lib/offlineData';
 
-// Cyberpunk theme
-const C = { bg: '#0A0A0F', card: '#1A1A2E', accent: '#00D9FF', text: '#E0E0E0', sub: '#8892a0', border: 'rgba(0, 217, 255, 0.15)', green: '#00FF88' };
+const C = {
+  bg: '#0A0A0F',
+  card: '#1A1A2E',
+  accent: '#00D9FF',
+  text: '#E0E0E0',
+  sub: '#8892A0',
+  border: 'rgba(0, 217, 255, 0.15)',
+};
 
 export default function ChatListScreen() {
-  const { user } = useAuth();
   const router = useRouter();
   const [chats, setChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,57 +31,80 @@ export default function ChatListScreen() {
   const [showNewChat, setShowNewChat] = useState(false);
   const [newChatName, setNewChatName] = useState('');
 
-  useEffect(() => {
-    loadChats();
-  }, []);
-
-  const loadChats = async () => {
+  const loadChatsFromServer = useCallback(async () => {
     try {
       const data = await chatsApi.getAll();
-      setChats(data || []);
-    } catch (e) {
-      console.error('Ошибка загрузки чатов:', e);
+      setChats(Array.isArray(data) ? data : []);
+      void syncDatabaseInBackground(true);
+    } catch (error) {
+      console.error('Ошибка загрузки чатов:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      const cachedChats = await getCachedTable<any>('chats');
+      if (cachedChats.length > 0) {
+        setChats(cachedChats);
+      }
+      await loadChatsFromServer();
+      setLoading(false);
+    };
+
+    void load();
+  }, [loadChatsFromServer]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadChatsFromServer();
+      return undefined;
+    }, [loadChatsFromServer])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadChats();
+    await loadChatsFromServer();
     setRefreshing(false);
   };
 
   const createChat = async () => {
-    if (!newChatName.trim()) return;
+    if (!newChatName.trim()) {
+      return;
+    }
     try {
       const chat = await chatsApi.createChat(newChatName.trim(), 'group');
       setShowNewChat(false);
       setNewChatName('');
       router.push({ pathname: '/(app)/chat/[id]', params: { id: chat.id } } as any);
-    } catch (e) {
-      console.error('Ошибка создания чата:', e);
+    } catch (error) {
+      console.error('Ошибка создания чата:', error);
     }
   };
 
-  const getInitials = (name: string) => {
-    return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
-  };
+  const getInitials = (name: string) =>
+    name?.split(' ').map((part) => part[0]).join('').toUpperCase().slice(0, 2) || '?';
 
   const formatTime = (date: string) => {
-    const d = new Date(date);
-    const now = new Date();
-    const diff = now.getTime() - d.getTime();
-    if (diff < 86400000) return d.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
-    return d.toLocaleDateString('ru', { day: '2-digit', month: '2-digit' });
+    const value = new Date(date);
+    const diff = Date.now() - value.getTime();
+    if (diff < 86400000) {
+      return value.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    }
+    return value.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
   };
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator color={C.accent} size="large" /></View>;
+    return (
+      <View style={s.center}>
+        <ActivityIndicator color={C.accent} size="large" />
+      </View>
+    );
   }
 
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <Text style={s.title}>Чат</Text>
+        <Text style={s.title}>Чаты</Text>
         <TouchableOpacity onPress={() => setShowNewChat(true)}>
           <Text style={s.addIcon}>✏️</Text>
         </TouchableOpacity>
@@ -74,8 +112,14 @@ export default function ChatListScreen() {
 
       {showNewChat && (
         <View style={s.newChatBox}>
-          <TextInput style={s.newChatInput} placeholder="Название чата" placeholderTextColor={C.sub}
-            value={newChatName} onChangeText={setNewChatName} autoFocus />
+          <TextInput
+            style={s.newChatInput}
+            placeholder="Название чата"
+            placeholderTextColor={C.sub}
+            value={newChatName}
+            onChangeText={setNewChatName}
+            autoFocus
+          />
           <TouchableOpacity style={s.createBtn} onPress={createChat}>
             <Text style={s.createBtnText}>Создать</Text>
           </TouchableOpacity>
@@ -87,12 +131,15 @@ export default function ChatListScreen() {
 
       <FlatList
         data={chats}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => String(item.id)}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.accent} />}
         contentContainerStyle={{ padding: 16 }}
         ListEmptyComponent={<Text style={s.empty}>Нет чатов</Text>}
         renderItem={({ item }) => (
-          <TouchableOpacity style={s.chatItem} onPress={() => router.push({ pathname: '/(app)/chat/[id]', params: { id: item.id } } as any)}>
+          <TouchableOpacity
+            style={s.chatItem}
+            onPress={() => router.push({ pathname: '/(app)/chat/[id]', params: { id: item.id } } as any)}
+          >
             <View style={[s.avatar, item.type === 'group' && s.groupAvatar]}>
               <Text style={s.avatarText}>{getInitials(item.name)}</Text>
             </View>

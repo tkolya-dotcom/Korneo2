@@ -15,6 +15,8 @@ const icon = (emoji: string) => ({ color }: { color: string }) => (
 );
 
 export default function AppTabsLayout() {
+  const visibleTabs = new Set(['index', 'chat', 'mileage', 'profile', 'settings']);
+
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | null = null;
 
@@ -36,7 +38,7 @@ export default function AppTabsLayout() {
 
   return (
     <Tabs
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerStyle: { backgroundColor: THEME.card },
         headerTintColor: THEME.accent,
         headerTitleStyle: { fontWeight: '600' },
@@ -50,7 +52,8 @@ export default function AppTabsLayout() {
         tabBarActiveTintColor: THEME.accent,
         tabBarInactiveTintColor: THEME.sub,
         tabBarLabelStyle: { fontSize: 11, marginBottom: 4 },
-      }}
+        tabBarButton: visibleTabs.has(route.name) ? undefined : () => null,
+      })}
     >
       <Tabs.Screen
         name="index"
