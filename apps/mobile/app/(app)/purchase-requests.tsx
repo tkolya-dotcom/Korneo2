@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/src/providers/AuthProvider';
@@ -6,7 +6,6 @@ import { purchaseRequestsApi } from '@/src/lib/supabase';
 
 const C = { bg: '#0f172a', card: '#1e293b', accent: '#02d7ff', text: '#e8f1ff', sub: '#9ab0c5', border: '#1e2a35', green: '#22c55e', yellow: '#f59e0b', orange: '#f97316', red: '#ef4444', purple: '#8b5cf6' };
 
-<<<<<<< HEAD
 const statusColor = (status: string) =>
   ({
     draft: C.sub,
@@ -24,17 +23,13 @@ const statusColor = (status: string) =>
 
 const statusLabel = (status: string) =>
   ({
-    draft: 'Черновик',
-    pending: 'Ожидает',
-    approved: 'Одобрена',
-    rejected: 'Отклонена',
-    completed: 'Готова',
-    cancelled: 'Отменена',
+    draft: 'Р§РµСЂРЅРѕРІРёРє',
+    pending: 'РћР¶РёРґР°РµС‚',
+    approved: 'РћРґРѕР±СЂРµРЅР°',
+    rejected: 'РћС‚РєР»РѕРЅРµРЅР°',
+    completed: 'Р“РѕС‚РѕРІР°',
+    cancelled: 'РћС‚РјРµРЅРµРЅР°',
   }[status] || status);
-=======
-const statusColor = (s: string) => ({ pending: C.yellow, approved: C.green, rejected: C.red, completed: C.accent, cancelled: C.sub, ready_for_receipt: C.orange, received: C.green, in_progress: C.purple }[s] || C.sub);
-const statusLabel = (s: string) => ({ pending: 'Ожидает', approved: 'Одобрена', rejected: 'Отклонена', completed: 'Готова', cancelled: 'Отменена', ready_for_receipt: 'К получению', received: 'Получена', in_progress: 'В работе' }[s] || s);
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
 
 export default function PurchaseRequestsScreen() {
   const { user, isManager } = useAuth();
@@ -58,14 +53,14 @@ export default function PurchaseRequestsScreen() {
     try {
       await purchaseRequestsApi.updateStatus(id, 'approved');
       load();
-    } catch (e: any) { Alert.alert('Ошибка', e.message); }
+    } catch (e: any) { Alert.alert('РћС€РёР±РєР°', e.message); }
   };
 
   const reject = async (id: string) => {
     try {
       await purchaseRequestsApi.updateStatus(id, 'rejected');
       load();
-    } catch (e: any) { Alert.alert('Ошибка', e.message); }
+    } catch (e: any) { Alert.alert('РћС€РёР±РєР°', e.message); }
   };
 
   if (loading) return <View style={s.center}><ActivityIndicator color={C.accent} size="large" /></View>;
@@ -73,7 +68,7 @@ export default function PurchaseRequestsScreen() {
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <Text style={s.title}>Заявки</Text>
+        <Text style={s.title}>Р—Р°СЏРІРєРё</Text>
         <Text style={s.count}>{items.length}</Text>
       </View>
 
@@ -82,24 +77,24 @@ export default function PurchaseRequestsScreen() {
         keyExtractor={item => item.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.accent} />}
         contentContainerStyle={{ padding: 16 }}
-        ListEmptyComponent={<Text style={s.empty}>Заявок нет</Text>}
+        ListEmptyComponent={<Text style={s.empty}>Р—Р°СЏРІРѕРє РЅРµС‚</Text>}
         renderItem={({ item }) => (
           <TouchableOpacity style={s.card} onPress={() => router.push({ pathname: '/(app)/purchase-request/[id]', params: { id: item.id } } as any)}>
             <View style={s.row}>
-              <Text style={s.cardTitle} numberOfLines={2}>{item.description || 'Заявка #' + item.id.slice(0, 8)}</Text>
+              <Text style={s.cardTitle} numberOfLines={2}>{item.description || 'Р—Р°СЏРІРєР° #' + item.id.slice(0, 8)}</Text>
               <View style={[s.badge, { backgroundColor: statusColor(item.status) }]}>
                 <Text style={s.badgeText}>{statusLabel(item.status)}</Text>
               </View>
             </View>
-            {item.installation?.title && <Text style={s.sub}>🔧 {item.installation.title || item.installation.address}</Text>}
-            {item.creator?.name && <Text style={s.sub}>👤 {item.creator.name}</Text>}
+            {item.installation?.title && <Text style={s.sub}>рџ”§ {item.installation.title || item.installation.address}</Text>}
+            {item.creator?.name && <Text style={s.sub}>рџ‘¤ {item.creator.name}</Text>}
             {isManager && item.status === 'pending' && (
               <View style={s.actions}>
                 <TouchableOpacity style={[s.actionBtn, { backgroundColor: C.green }]} onPress={() => approve(item.id)}>
-                  <Text style={s.actionBtnText}>Одобрить</Text>
+                  <Text style={s.actionBtnText}>РћРґРѕР±СЂРёС‚СЊ</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[s.actionBtn, { backgroundColor: C.red }]} onPress={() => reject(item.id)}>
-                  <Text style={s.actionBtnText}>Отклонить</Text>
+                  <Text style={s.actionBtnText}>РћС‚РєР»РѕРЅРёС‚СЊ</Text>
                 </TouchableOpacity>
               </View>
             )}

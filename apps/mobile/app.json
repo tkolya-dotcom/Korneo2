@@ -27,8 +27,6 @@
           }
         }
       ],
-<<<<<<< HEAD
-      "expo-notifications",
       [
         "expo-notifications",
         {
@@ -37,8 +35,6 @@
           "sounds": []
         }
       ],
-=======
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
       "expo-router"
     ],
     "android": {

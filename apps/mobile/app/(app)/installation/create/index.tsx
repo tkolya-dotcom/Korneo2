@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { installationsApi, projectsApi, authApi } from '@/src/lib/supabase';
 
-<<<<<<< HEAD
 const C = {
   bg: '#0A0A0F',
   card: '#1A1A2E',
@@ -49,7 +48,7 @@ const getAddressEquipmentOptions = (item: AddressItem | null): EquipmentOption[]
       return {
         key,
         id,
-        name: name || `СК ${index + 1}`,
+        name: name || `РЎРљ ${index + 1}`,
         brand: String(entry.brand || '').trim() || undefined,
         model: String(entry.model || '').trim() || undefined,
         serial: String(entry.serial || '').trim() || undefined,
@@ -85,11 +84,7 @@ const getAddressEquipmentOptions = (item: AddressItem | null): EquipmentOption[]
 const formatEquipmentOptionMeta = (item: EquipmentOption) =>
   [item.brand, item.model, item.serial ? `S/N ${item.serial}` : null, item.inventory ? `INV ${item.inventory}` : null]
     .filter(Boolean)
-    .join(' • ');
-=======
-// Cyberpunk theme
-const C = { bg: '#0A0A0F', card: '#1A1A2E', accent: '#00D9FF', text: '#E0E0E0', sub: '#8892a0', border: 'rgba(0, 217, 255, 0.15)', danger: '#FF3366', green: '#00FF88' };
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
+    .join(' вЂў ');
 
 export default function InstallationCreateScreen() {
   const { user, canCreateTasks } = useAuth();
@@ -103,18 +98,13 @@ export default function InstallationCreateScreen() {
   const [assigneeId, setAssigneeId] = useState('');
   const [plannedDate, setPlannedDate] = useState('');
   const [description, setDescription] = useState('');
-<<<<<<< HEAD
   const [selectedAddress, setSelectedAddress] = useState<AddressItem | null>(null);
   const [selectedEquipmentKeys, setSelectedEquipmentKeys] = useState<string[]>([]);
   const [manualEquipment, setManualEquipment] = useState<Array<{ id: string; name: string }>>([]);
-=======
-  // Оборудование СК (до 7 единиц)
-  const [equipment, setEquipment] = useState<Array<{id: string, name: string}>>([]);
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
 
   useEffect(() => {
     if (!canCreateTasks) {
-      Alert.alert('Ошибка', 'Недостаточно прав для создания монтажа');
+      Alert.alert('РћС€РёР±РєР°', 'РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РїСЂР°РІ РґР»СЏ СЃРѕР·РґР°РЅРёСЏ РјРѕРЅС‚Р°Р¶Р°');
       router.back();
       return;
     }
@@ -130,11 +120,10 @@ export default function InstallationCreateScreen() {
       setProjects(projData || []);
       setUsers(usersData || []);
     } catch (e) {
-      console.error('Ошибка загрузки:', e);
+      console.error('РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё:', e);
     }
   };
 
-<<<<<<< HEAD
   const filteredAddresses = useMemo(() => {
     return searchAddressSuggestions(addresses, address, 20);
   }, [address, addresses]);
@@ -191,35 +180,16 @@ export default function InstallationCreateScreen() {
 
   const removeManualEquipment = (index: number) => {
     setManualEquipment((prev) => prev.filter((_, i) => i !== index));
-=======
-  const addEquipment = () => {
-    if (equipment.length >= 7) {
-      Alert.alert('Ошибка', 'Максимум 7 единиц оборудования');
-      return;
-    }
-    setEquipment([...equipment, { id: '', name: '' }]);
-  };
-
-  const updateEquipment = (index: number, field: 'id' | 'name', value: string) => {
-    const updated = [...equipment];
-    updated[index] = { ...updated[index], [field]: value };
-    setEquipment(updated);
-  };
-
-  const removeEquipment = (index: number) => {
-    setEquipment(equipment.filter((_, i) => i !== index));
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
   };
 
   const handleSubmit = async () => {
     if (!address.trim()) {
-      Alert.alert('Ошибка', 'Введите адрес');
+      Alert.alert('РћС€РёР±РєР°', 'Р’РІРµРґРёС‚Рµ Р°РґСЂРµСЃ');
       return;
     }
 
     setLoading(true);
     try {
-<<<<<<< HEAD
       const selectedFromAddress = addressEquipmentOptions
         .filter((option) => selectedEquipmentKeys.includes(option.key))
         .map((option) => ({
@@ -256,10 +226,6 @@ export default function InstallationCreateScreen() {
 
       const payload: Record<string, unknown> = {
         address: normalizedAddress,
-=======
-      const inst: any = {
-        address: address.trim(),
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
         project_id: projectId || null,
         assignee_id: assigneeId || null,
         planned_date: plannedDate || null,
@@ -267,9 +233,8 @@ export default function InstallationCreateScreen() {
         status: 'new',
       };
 
-      // Добавляем оборудование СК (до 7)
+      // Р”РѕР±Р°РІР»СЏРµРј РѕР±РѕСЂСѓРґРѕРІР°РЅРёРµ РЎРљ (РґРѕ 7)
       equipment.forEach((eq, i) => {
-<<<<<<< HEAD
         const suffix = i === 0 ? '' : String(i + 1);
         if (eq.id) payload[`id_sk${suffix}`] = eq.id;
         if (eq.name) payload[`naimenovanie_sk${suffix}`] = eq.name;
@@ -277,18 +242,14 @@ export default function InstallationCreateScreen() {
         if (eq.model) payload[`model_sk${suffix}`] = eq.model;
         if (eq.serial) payload[`seriynyy_nomer${suffix}`] = eq.serial;
         if (eq.inventory) payload[`inventarnyy_nomer${suffix}`] = eq.inventory;
-=======
-        if (eq.id) inst[`id_sk${i === 0 ? '' : i}`] = eq.id;
-        if (eq.name) inst[`naimenovanie_sk${i === 0 ? '' : i}`] = eq.name;
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
       });
 
       await installationsApi.create(inst);
-      Alert.alert('Успех', 'Монтаж создан', [
+      Alert.alert('РЈСЃРїРµС…', 'РњРѕРЅС‚Р°Р¶ СЃРѕР·РґР°РЅ', [
         { text: 'OK', onPress: () => router.back() }
       ]);
     } catch (e: any) {
-      Alert.alert('Ошибка', e.message || 'Не удалось создать монтаж');
+      Alert.alert('РћС€РёР±РєР°', e.message || 'РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РјРѕРЅС‚Р°Р¶');
     } finally {
       setLoading(false);
     }
@@ -298,51 +259,50 @@ export default function InstallationCreateScreen() {
     <ScrollView style={s.container} contentContainerStyle={s.content}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={s.backBtn}>← Назад</Text>
+          <Text style={s.backBtn}>в†ђ РќР°Р·Р°Рґ</Text>
         </TouchableOpacity>
-        <Text style={s.title}>Создать монтаж</Text>
+        <Text style={s.title}>РЎРѕР·РґР°С‚СЊ РјРѕРЅС‚Р°Р¶</Text>
       </View>
 
       <View style={s.form}>
-        <Text style={s.label}>Адрес *</Text>
-        <TextInput style={s.input} placeholder="Адрес монтажа" placeholderTextColor={C.sub}
+        <Text style={s.label}>РђРґСЂРµСЃ *</Text>
+        <TextInput style={s.input} placeholder="РђРґСЂРµСЃ РјРѕРЅС‚Р°Р¶Р°" placeholderTextColor={C.sub}
           value={address} onChangeText={setAddress} />
 
-        <Text style={s.label}>Описание</Text>
-        <TextInput style={[s.input, s.textarea]} placeholder="Описание работ" placeholderTextColor={C.sub}
+        <Text style={s.label}>РћРїРёСЃР°РЅРёРµ</Text>
+        <TextInput style={[s.input, s.textarea]} placeholder="РћРїРёСЃР°РЅРёРµ СЂР°Р±РѕС‚" placeholderTextColor={C.sub}
           value={description} onChangeText={setDescription} multiline numberOfLines={3} />
 
-        <Text style={s.label}>Проект</Text>
+        <Text style={s.label}>РџСЂРѕРµРєС‚</Text>
         <View style={s.selectWrap}>
           <TouchableOpacity style={s.select} onPress={() => {
-            Alert.alert('Выберите проект', '', [
+            Alert.alert('Р’С‹Р±РµСЂРёС‚Рµ РїСЂРѕРµРєС‚', '', [
               ...projects.map(p => ({ text: p.name, onPress: () => setProjectId(p.id) })),
-              { text: 'Отмена', style: 'cancel' }
+              { text: 'РћС‚РјРµРЅР°', style: 'cancel' }
             ]);
           }}>
-            <Text style={s.selectText}>{projects.find(p => p.id === projectId)?.name || 'Выберите проект'}</Text>
+            <Text style={s.selectText}>{projects.find(p => p.id === projectId)?.name || 'Р’С‹Р±РµСЂРёС‚Рµ РїСЂРѕРµРєС‚'}</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={s.label}>Ответственный</Text>
+        <Text style={s.label}>РћС‚РІРµС‚СЃС‚РІРµРЅРЅС‹Р№</Text>
         <View style={s.selectWrap}>
           <TouchableOpacity style={s.select} onPress={() => {
-            Alert.alert('Выберите ответственного', '', [
+            Alert.alert('Р’С‹Р±РµСЂРёС‚Рµ РѕС‚РІРµС‚СЃС‚РІРµРЅРЅРѕРіРѕ', '', [
               ...users.map(u => ({ text: u.name || u.email, onPress: () => setAssigneeId(u.id) })),
-              { text: 'Отмена', style: 'cancel' }
+              { text: 'РћС‚РјРµРЅР°', style: 'cancel' }
             ]);
           }}>
-            <Text style={s.selectText}>{users.find(u => u.id === assigneeId)?.name || 'Выберите ответственного'}</Text>
+            <Text style={s.selectText}>{users.find(u => u.id === assigneeId)?.name || 'Р’С‹Р±РµСЂРёС‚Рµ РѕС‚РІРµС‚СЃС‚РІРµРЅРЅРѕРіРѕ'}</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={s.label}>Плановая дата</Text>
-        <TextInput style={s.input} placeholder="ГГГГ-ММ-ДД" placeholderTextColor={C.sub}
+        <Text style={s.label}>РџР»Р°РЅРѕРІР°СЏ РґР°С‚Р°</Text>
+        <TextInput style={s.input} placeholder="Р“Р“Р“Р“-РњРњ-Р”Р”" placeholderTextColor={C.sub}
           value={plannedDate} onChangeText={setPlannedDate} />
 
-        {/* Оборудование СК */}
+        {/* РћР±РѕСЂСѓРґРѕРІР°РЅРёРµ РЎРљ */}
         <View style={s.sectionHeader}>
-<<<<<<< HEAD
           <Text style={s.label}>{'\u041e\u0431\u043e\u0440\u0443\u0434\u043e\u0432\u0430\u043d\u0438\u0435 (\u0421\u041a)'}</Text>
           <TouchableOpacity onPress={addManualEquipment}>
             <Text style={s.addBtn}>{`+ \u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0435\u0449\u0435 (${selectedEquipmentKeys.length + manualEquipment.length}/7)`}</Text>
@@ -364,7 +324,7 @@ export default function InstallationCreateScreen() {
                   onPress={() => toggleAddressEquipment(option.key)}
                 >
                   <View style={[s.checkbox, checked && s.checkboxChecked]}>
-                    <Text style={s.checkboxMark}>{checked ? '✓' : ''}</Text>
+                    <Text style={s.checkboxMark}>{checked ? 'вњ“' : ''}</Text>
                   </View>
                   <View style={s.checkboxTextWrap}>
                     <Text style={s.checkboxTitle} numberOfLines={2}>
@@ -405,28 +365,12 @@ export default function InstallationCreateScreen() {
             />
             <TouchableOpacity onPress={() => removeManualEquipment(index)} style={s.removeBtn}>
               <Text style={s.removeBtnText}>{'\u2715'}</Text>
-=======
-          <Text style={s.label}>Оборудование (СК)</Text>
-          <TouchableOpacity onPress={addEquipment}>
-            <Text style={s.addBtn}>+ Добавить ({equipment.length}/7)</Text>
-          </TouchableOpacity>
-        </View>
-
-        {equipment.map((eq, index) => (
-          <View key={index} style={s.equipmentRow}>
-            <TextInput style={[s.input, { flex: 1, marginBottom: 0 }]} placeholder={`ID СК ${index + 1}`} 
-              placeholderTextColor={C.sub} value={eq.id} onChangeText={(v) => updateEquipment(index, 'id', v)} />
-            <TextInput style={[s.input, { flex: 2, marginBottom: 0 }]} placeholder="Наименование" 
-              placeholderTextColor={C.sub} value={eq.name} onChangeText={(v) => updateEquipment(index, 'name', v)} />
-            <TouchableOpacity onPress={() => removeEquipment(index)} style={s.removeBtn}>
-              <Text style={s.removeBtnText}>✕</Text>
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
             </TouchableOpacity>
           </View>
         ))}
 
         <TouchableOpacity style={[s.btn, loading && s.btnDisabled]} onPress={handleSubmit} disabled={loading}>
-          {loading ? <ActivityIndicator color={C.bg} /> : <Text style={s.btnText}>СОЗДАТЬ МОНТАЖ</Text>}
+          {loading ? <ActivityIndicator color={C.bg} /> : <Text style={s.btnText}>РЎРћР—Р”РђРўР¬ РњРћРќРўРђР–</Text>}
         </TouchableOpacity>
       </View>
     </ScrollView>

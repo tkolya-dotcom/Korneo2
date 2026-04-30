@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+﻿import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
@@ -19,7 +19,82 @@ const handle = <T>(data: T | null, error: { message: string } | null): T => {
   return data as T;
 };
 
-<<<<<<< HEAD
+const DEFAULT_REQUEST_TIMEOUT_MS = 20000;
+const READ_RETRY_ATTEMPTS = 3;
+const READ_RETRY_DELAYS_MS = [250, 700, 1500];
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+const stringifyError = (error: unknown) => {
+  if (!error) return '';
+  if (typeof error === 'string') return error.toLowerCase();
+  if (error instanceof Error) return (error.message || '').toLowerCase();
+  if (typeof error === 'object') {
+    const maybeMessage = (error as { message?: string }).message;
+    if (typeof maybeMessage === 'string') {
+      return maybeMessage.toLowerCase();
+    }
+  }
+  return String(error).toLowerCase();
+};
+
+const isRetryableReadError = (error: unknown) => {
+  const message = stringifyError(error);
+  return (
+    message.includes('timed out') ||
+    message.includes('timeout') ||
+    message.includes('network request failed') ||
+    message.includes('failed to fetch') ||
+    message.includes('ecconnreset') ||
+    message.includes('econnrefused') ||
+    message.includes('connection') ||
+    message.includes('temporar') ||
+    message.includes('503') ||
+    message.includes('504')
+  );
+};
+
+const withTimeout = async <T>(
+  promise: PromiseLike<T>,
+  label: string,
+  timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS
+): Promise<T> => {
+  let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutHandle = setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([Promise.resolve(promise), timeoutPromise]);
+  } finally {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }
+};
+
+const withReadRetry = async <T>(
+  factory: () => PromiseLike<T>,
+  label: string,
+  attempts: number = READ_RETRY_ATTEMPTS
+): Promise<T> => {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await withTimeout(factory(), label);
+    } catch (error) {
+      lastError = error;
+      const isLastAttempt = attempt >= attempts - 1;
+      if (!isRetryableReadError(error) || isLastAttempt) {
+        throw error;
+      }
+      const delay = READ_RETRY_DELAYS_MS[Math.min(attempt, READ_RETRY_DELAYS_MS.length - 1)];
+      await sleep(delay);
+    }
+  }
+  throw lastError ?? new Error(`${label} failed`);
+};
+
 const uniqueIds = (values: Array<string | null | undefined>) =>
   Array.from(new Set(values.filter((value): value is string => Boolean(value))));
 
@@ -245,7 +320,7 @@ const normalizePurchaseRequestItems = (rawItems: Record<string, unknown>[]) =>
           ? quantityRaw
           : Number.parseFloat(String(quantityRaw).replace(',', '.'));
       const quantity = Number.isFinite(quantityParsed) ? quantityParsed : 0;
-      const unit = String(item.unit ?? item.measure ?? material?.default_unit ?? 'шт').trim() || 'шт';
+      const unit = String(item.unit ?? item.measure ?? material?.default_unit ?? 'С€С‚').trim() || 'С€С‚';
       const materialId = String(
         item.material_id ??
           item.materialId ??
@@ -376,7 +451,7 @@ const resolvePurchaseRequestAutoStatus = async (items: Record<string, unknown>[]
 };
 
 const loadPurchaseRequestItems = async (requestId: string, request?: Record<string, unknown>) => {
-  // Сначала пробуем загрузить из таблицы purchase_request_items
+  // РЎРЅР°С‡Р°Р»Р° РїСЂРѕР±СѓРµРј Р·Р°РіСЂСѓР·РёС‚СЊ РёР· С‚Р°Р±Р»РёС†С‹ purchase_request_items
   for (const foreignKey of PURCHASE_REQUEST_ITEM_KEYS) {
     try {
       const { data, error } = await withReadRetry(
@@ -403,7 +478,7 @@ const loadPurchaseRequestItems = async (requestId: string, request?: Record<stri
     }
   }
 
-  // Fallback: пытаемся извлечь items из самого request
+  // Fallback: РїС‹С‚Р°РµРјСЃСЏ РёР·РІР»РµС‡СЊ items РёР· СЃР°РјРѕРіРѕ request
   if (request) {
     const embedded = extractPurchaseRequestItemsFromRequest(request);
     if (embedded.length > 0) {
@@ -411,7 +486,7 @@ const loadPurchaseRequestItems = async (requestId: string, request?: Record<stri
     }
   }
 
-  // Пробуем загрузить сам request для извлечения items
+  // РџСЂРѕР±СѓРµРј Р·Р°РіСЂСѓР·РёС‚СЊ СЃР°Рј request РґР»СЏ РёР·РІР»РµС‡РµРЅРёСЏ items
   try {
     const { data: requestData } = await supabase
       .from('purchase_requests')
@@ -503,7 +578,7 @@ const getFallbackUser = (authUser: { id: string; email?: string | null }) => ({
   id: authUser.id,
   auth_user_id: authUser.id,
   email: authUser.email || '',
-  name: authUser.email?.split('@')[0] || 'Пользователь',
+  name: authUser.email?.split('@')[0] || 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ',
   role: 'worker',
   is_online: false,
 });
@@ -817,9 +892,6 @@ const getCurrentProfile = async () => {
   };
 };
 
-=======
-// Auth API
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
 export const authApi = {
   login: async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -876,6 +948,21 @@ export const authApi = {
 };
 
 export const usersApi = {
+  getAll: async () => {
+    const { data, error } = await withReadRetry(
+      () => supabase.from('users').select('id, name, email, role, is_online, last_seen_at').order('name', { ascending: true }),
+      'load users list'
+    );
+    return handle<any[]>(data, error);
+  },
+  setPushToken: async (token: string | null) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase
+      .from('users')
+      .update({ push_token: token, updated_at: new Date().toISOString() })
+      .eq('id', user.id);
+  },
   heartbeat: async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -983,7 +1070,6 @@ export const purchaseRequestsApi = {
     return handle(data, error);
   },
   getById: async (id: string) => {
-<<<<<<< HEAD
     const { data, error } = await withReadRetry(
       () =>
         supabase
@@ -1073,21 +1159,6 @@ export const purchaseRequestsApi = {
       status: finalStatus,
       items: normalizedItems,
     };
-=======
-    const { data, error } = await supabase.from('purchase_requests').select('*, items:purchase_request_items(*), installation:installation_id(*), creator:creator_id(*)').eq('id', id).single();
-    return handle(data, error);
-  },
-  create: async (request: any) => {
-    const { items, ...reqData } = request;
-    const { data: pr, error: prError} = await supabase.from('purchase_requests').insert([reqData]).select().single();
-    if (prError) throw prError;
-    if (items && items.length > 0) {
-      const itemsToInsert = items.map((item: any) => ({ ...item, purchase_request_id: pr.id }));
-      const { error: itemsError } = await supabase.from('purchase_request_items').insert(itemsToInsert);
-      if (itemsError) throw itemsError;
-    }
-    return pr;
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
   },
   updateStatus: async (id: string, status: string, comment?: string, receipt_address?: string, received_at?: string) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -1109,7 +1180,6 @@ export const materialsApi = {
   },
 };
 
-<<<<<<< HEAD
 const resolveWarehouseMaterialId = (row: Record<string, any>) =>
   String(
     row.material_id ??
@@ -1285,10 +1355,10 @@ export const warehouseApi = {
     notes?: string | null;
   }) => {
     if (!payload.material_id) {
-      throw new Error('Материал не выбран');
+      throw new Error('РњР°С‚РµСЂРёР°Р» РЅРµ РІС‹Р±СЂР°РЅ');
     }
     if (!Number.isFinite(payload.quantity) || payload.quantity <= 0) {
-      throw new Error('Количество должно быть больше нуля');
+      throw new Error('РљРѕР»РёС‡РµСЃС‚РІРѕ РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ Р±РѕР»СЊС€Рµ РЅСѓР»СЏ');
     }
 
     const { data: existingData, error: existingError } = await supabase
@@ -1360,7 +1430,7 @@ export const warehouseApi = {
         }
       }
 
-      throw lastError ?? new Error('Не удалось обновить склад');
+      throw lastError ?? new Error('РќРµ СѓРґР°Р»РѕСЃСЊ РѕР±РЅРѕРІРёС‚СЊ СЃРєР»Р°Рґ');
     }
 
     const insertAttempts = [
@@ -1411,7 +1481,7 @@ export const warehouseApi = {
       }
     }
 
-    throw lastInsertError ?? new Error('Не удалось добавить материал на склад');
+    throw lastInsertError ?? new Error('РќРµ СѓРґР°Р»РѕСЃСЊ РґРѕР±Р°РІРёС‚СЊ РјР°С‚РµСЂРёР°Р» РЅР° СЃРєР»Р°Рґ');
   },
 
   createIssue: async (payload: {
@@ -1422,13 +1492,13 @@ export const warehouseApi = {
     items: Array<{ material_id: string; quantity: number }>;
   }) => {
     if (!payload.issued_to) {
-      throw new Error('Не выбран сотрудник для выдачи');
+      throw new Error('РќРµ РІС‹Р±СЂР°РЅ СЃРѕС‚СЂСѓРґРЅРёРє РґР»СЏ РІС‹РґР°С‡Рё');
     }
     if (!payload.issued_at) {
-      throw new Error('Не указана дата выдачи');
+      throw new Error('РќРµ СѓРєР°Р·Р°РЅР° РґР°С‚Р° РІС‹РґР°С‡Рё');
     }
     if (!Array.isArray(payload.items) || payload.items.length === 0) {
-      throw new Error('Добавьте хотя бы одну позицию');
+      throw new Error('Р”РѕР±Р°РІСЊС‚Рµ С…РѕС‚СЏ Р±С‹ РѕРґРЅСѓ РїРѕР·РёС†РёСЋ');
     }
 
     const normalizedItems = payload.items
@@ -1439,7 +1509,7 @@ export const warehouseApi = {
       .filter((item) => Boolean(item.material_id) && Number.isFinite(item.quantity) && item.quantity > 0);
 
     if (normalizedItems.length === 0) {
-      throw new Error('Некорректные позиции выдачи');
+      throw new Error('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Рµ РїРѕР·РёС†РёРё РІС‹РґР°С‡Рё');
     }
 
     const issuedAtDate = new Date(payload.issued_at);
@@ -1450,7 +1520,7 @@ export const warehouseApi = {
     const profileResult = await getCurrentProfile().catch(() => null);
     const issuerId = profileResult?.user?.id ? String(profileResult.user.id) : null;
 
-    // Сначала попробуем создать запись в materials_usage (основная таблица для выдач)
+    // РЎРЅР°С‡Р°Р»Р° РїРѕРїСЂРѕР±СѓРµРј СЃРѕР·РґР°С‚СЊ Р·Р°РїРёСЃСЊ РІ materials_usage (РѕСЃРЅРѕРІРЅР°СЏ С‚Р°Р±Р»РёС†Р° РґР»СЏ РІС‹РґР°С‡)
     const saveToMaterialsUsage = async () => {
       for (const item of normalizedItems) {
         const usageAttempts: Array<Record<string, unknown>> = [
@@ -1501,7 +1571,7 @@ export const warehouseApi = {
       }
     };
 
-    // Попробуем создать запись в warehouse_issues
+    // РџРѕРїСЂРѕР±СѓРµРј СЃРѕР·РґР°С‚СЊ Р·Р°РїРёСЃСЊ РІ warehouse_issues
     const tryWarehouseIssues = async () => {
       const issuePayload = {
         issued_at: normalizedIssuedAt,
@@ -1529,7 +1599,7 @@ export const warehouseApi = {
           .single();
 
         if (!error && data) {
-          // Попробуем добавить позиции выдачи
+          // РџРѕРїСЂРѕР±СѓРµРј РґРѕР±Р°РІРёС‚СЊ РїРѕР·РёС†РёРё РІС‹РґР°С‡Рё
           const itemsAttempts = [
             normalizedItems.map((item) => ({
               issue_id: data.id,
@@ -1575,7 +1645,7 @@ export const warehouseApi = {
       return null;
     };
 
-    // Попробуем уменьшить количество на складе
+    // РџРѕРїСЂРѕР±СѓРµРј СѓРјРµРЅСЊС€РёС‚СЊ РєРѕР»РёС‡РµСЃС‚РІРѕ РЅР° СЃРєР»Р°РґРµ
     const materialIds = uniqueIds(normalizedItems.map((item) => item.material_id));
     const stockMap: Record<string, any> = {};
 
@@ -1594,10 +1664,10 @@ export const warehouseApi = {
         }
       }
     } catch (e) {
-      console.warn('Не удалось загрузить остатки склада:', e);
+      console.warn('РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РѕСЃС‚Р°С‚РєРё СЃРєР»Р°РґР°:', e);
     }
 
-    // Уменьшаем остатки если есть записи
+    // РЈРјРµРЅСЊС€Р°РµРј РѕСЃС‚Р°С‚РєРё РµСЃР»Рё РµСЃС‚СЊ Р·Р°РїРёСЃРё
     for (const item of normalizedItems) {
       const row = stockMap[item.material_id];
       if (!row) continue;
@@ -1634,19 +1704,19 @@ export const warehouseApi = {
       }
     }
 
-    // Пробуем warehouse_issues
+    // РџСЂРѕР±СѓРµРј warehouse_issues
     let issue = null;
     try {
       issue = await tryWarehouseIssues();
     } catch (e) {
-      console.warn('warehouse_issues недоступен:', e);
+      console.warn('warehouse_issues РЅРµРґРѕСЃС‚СѓРїРµРЅ:', e);
     }
 
-    // Всегда сохраняем в materials_usage
+    // Р’СЃРµРіРґР° СЃРѕС…СЂР°РЅСЏРµРј РІ materials_usage
     try {
       await saveToMaterialsUsage();
     } catch (e) {
-      console.warn('materials_usage недоступен:', e);
+      console.warn('materials_usage РЅРµРґРѕСЃС‚СѓРїРµРЅ:', e);
     }
 
     return issue || {
@@ -1877,16 +1947,12 @@ export const warehouseApi = {
 
 type CommentEntityType = 'task' | 'installation';
 
-=======
-// Comments API
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
 export const commentsApi = {
   getByTask: async (taskId: string, taskType: 'task' | 'installation' = 'task') => {
     const table = taskType === 'task' ? 'task_comments' : 'installation_comments';
     const { data, error } = await supabase.from(table).select('*, author:author_id(*)').eq('task_id', taskId).order('created_at', { ascending: true });
     return handle(data, error);
   },
-<<<<<<< HEAD
 
   subscribe: (entityId: string, entityType: CommentEntityType, onChange: () => void) =>
     supabase
@@ -2467,8 +2533,8 @@ export const chatApi = {
       const type = (chat.type as string | undefined) || 'private';
       const rawName = (chat.name as string | null | undefined)?.trim();
       const normalizedChatName =
-        type === 'group' ? rawName || 'Группа' : partner?.name || rawName || 'Чат';
-      const chatName = type === 'group' ? rawName || 'Группа' : partner?.name || rawName || 'Чат';
+        type === 'group' ? rawName || 'Р“СЂСѓРїРїР°' : partner?.name || rawName || 'Р§Р°С‚';
+      const chatName = type === 'group' ? rawName || 'Р“СЂСѓРїРїР°' : partner?.name || rawName || 'Р§Р°С‚';
 
       const lastMessage = latestMessageByChat[chatId] || null;
       const normalizedChat: ChatListItem = {
@@ -2864,7 +2930,7 @@ export const chatApi = {
   sendMessage: async (chatId: string, text: string, replyTo?: Record<string, unknown> | null) => {
     const trimmed = text.trim();
     if (!trimmed) {
-      throw new Error('Сообщение пустое');
+      throw new Error('РЎРѕРѕР±С‰РµРЅРёРµ РїСѓСЃС‚РѕРµ');
     }
 
     const { user } = await getCurrentProfile();
@@ -2934,12 +3000,12 @@ export const chatApi = {
 
     const message = handle<Record<string, unknown>>(data, error);
     if (String(message.chat_id || '') !== chatId) {
-      throw new Error('Сообщение не принадлежит текущему чату');
+      throw new Error('РЎРѕРѕР±С‰РµРЅРёРµ РЅРµ РїСЂРёРЅР°РґР»РµР¶РёС‚ С‚РµРєСѓС‰РµРјСѓ С‡Р°С‚Сѓ');
     }
 
     const authorId = getMessageAuthorId(message as Record<string, any>);
     if (authorId && !actorIdSet.has(String(authorId))) {
-      throw new Error('Удалить у всех можно только свои сообщения');
+      throw new Error('РЈРґР°Р»РёС‚СЊ Сѓ РІСЃРµС… РјРѕР¶РЅРѕ С‚РѕР»СЊРєРѕ СЃРІРѕРё СЃРѕРѕР±С‰РµРЅРёСЏ');
     }
 
     const { error: deleteError } = await supabase.from('messages').delete().eq('id', messageId);
@@ -2954,10 +3020,10 @@ export const chatApi = {
     const normalizedReaction = reaction.trim();
 
     if (!currentUserId) {
-      throw new Error('Не удалось определить пользователя');
+      throw new Error('РќРµ СѓРґР°Р»РѕСЃСЊ РѕРїСЂРµРґРµР»РёС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ');
     }
     if (!normalizedReaction) {
-      throw new Error('Реакция не может быть пустой');
+      throw new Error('Р РµР°РєС†РёСЏ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РїСѓСЃС‚РѕР№');
     }
 
     const lookupAttempts = [
@@ -2997,7 +3063,7 @@ export const chatApi = {
         continue;
       }
       if (isRelationMissingError(error)) {
-        throw new Error('Реакции в чате пока не поддерживаются в БД');
+        throw new Error('Р РµР°РєС†РёРё РІ С‡Р°С‚Рµ РїРѕРєР° РЅРµ РїРѕРґРґРµСЂР¶РёРІР°СЋС‚СЃСЏ РІ Р‘Р”');
       }
       throw error;
     }
@@ -3026,12 +3092,12 @@ export const chatApi = {
         continue;
       }
       if (isRelationMissingError(error)) {
-        throw new Error('Реакции в чате пока не поддерживаются в БД');
+        throw new Error('Р РµР°РєС†РёРё РІ С‡Р°С‚Рµ РїРѕРєР° РЅРµ РїРѕРґРґРµСЂР¶РёРІР°СЋС‚СЃСЏ РІ Р‘Р”');
       }
       throw error;
     }
 
-    throw lastError ?? new Error('Не удалось сохранить реакцию');
+    throw lastError ?? new Error('РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ СЂРµР°РєС†РёСЋ');
   },
 
   markChatAsRead: async (chatId: string) => {
@@ -3222,7 +3288,7 @@ export const chatApi = {
 
     if (error) {
       if (isColumnMissingError(error)) {
-        throw new Error('В базе отсутствует поле pinned у chat_members');
+        throw new Error('Р’ Р±Р°Р·Рµ РѕС‚СЃСѓС‚СЃС‚РІСѓРµС‚ РїРѕР»Рµ pinned Сѓ chat_members');
       }
       throw error;
     }
@@ -3242,7 +3308,7 @@ export const chatApi = {
 
     if (error) {
       if (isColumnMissingError(error)) {
-        throw new Error('В базе отсутствует поле muted у chat_members');
+        throw new Error('Р’ Р±Р°Р·Рµ РѕС‚СЃСѓС‚СЃС‚РІСѓРµС‚ РїРѕР»Рµ muted Сѓ chat_members');
       }
       throw error;
     }
@@ -3291,7 +3357,7 @@ export const chatApi = {
     const primaryActorId = actorIds[0] || String(authUser.id);
 
     if (!partnerId || actorIds.includes(partnerId)) {
-      throw new Error('Некорректный собеседник');
+      throw new Error('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ СЃРѕР±РµСЃРµРґРЅРёРє');
     }
 
     const [mineResult, partnerResult] = await Promise.all([
@@ -3358,7 +3424,7 @@ export const chatApi = {
     }
 
     if (!chatId) {
-      throw lastCreateError ?? new Error('Не удалось создать чат');
+      throw lastCreateError ?? new Error('РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ С‡Р°С‚');
     }
 
     const membersInsertAttempts: Array<Array<Record<string, unknown>>> = [];
@@ -3389,7 +3455,7 @@ export const chatApi = {
       }
     }
 
-    throw lastMembersError ?? new Error('Не удалось добавить участников в чат');
+    throw lastMembersError ?? new Error('РќРµ СѓРґР°Р»РѕСЃСЊ РґРѕР±Р°РІРёС‚СЊ СѓС‡Р°СЃС‚РЅРёРєРѕРІ РІ С‡Р°С‚');
   },
 
   subscribe: (chatId: string, onChange: () => void) =>
@@ -3807,17 +3873,17 @@ const loadJobAddresses = async () => {
 
     if (
       source.includes('atss') ||
-      source.includes('атсс') ||
+      source.includes('Р°С‚СЃСЃ') ||
       source.includes('atss_q1_2026')
     ) {
-      return 'АТСС';
+      return 'РђРўРЎРЎ';
     }
     if (
       source.includes('kasip') ||
       source.includes('kasip_azm_q1_2026') ||
-      source.includes('касип')
+      source.includes('РєР°СЃРёРї')
     ) {
-      return 'КАСИП';
+      return 'РљРђРЎРРџ';
     }
     return sourceRaw ? String(sourceRaw) : '';
   };
@@ -3853,7 +3919,7 @@ const loadJobAddresses = async () => {
       source_id: normalizedId,
       id: normalizedId,
       address: normalizedAddress,
-      source_label: item.source === 'atss' ? 'АТСС' : 'КАСИП',
+      source_label: item.source === 'atss' ? 'РђРўРЎРЎ' : 'РљРђРЎРРџ',
     };
 
     candidate.sk_items = candidateEquipment;
@@ -3884,7 +3950,7 @@ const loadJobAddresses = async () => {
       ]),
       source_label:
         mergedSourceLabels.length > 1
-          ? 'АТСС/КАСИП'
+          ? 'РђРўРЎРЎ/РљРђРЎРРџ'
           : mergedSourceLabels[0] || winner.source_label || existing.source_label,
       lat:
         typeof winner.lat === 'number'
@@ -3919,7 +3985,7 @@ const loadJobAddresses = async () => {
     );
     merged.source_label =
       normalizedSourceLabels.length > 1
-        ? 'АТСС/КАСИП'
+        ? 'РђРўРЎРЎ/РљРђРЎРРџ'
         : normalizedSourceLabels[0] ||
           toSourceLabel(winner.source_label || winner.source) ||
           toSourceLabel(existing.source_label || existing.source);
@@ -4002,27 +4068,62 @@ export const jobsApi = {
     const { data, error } = await withReadRetry(() => query, 'load jobs');
     const jobs = handle<any[]>(data, error);
     return normalizeJobList(jobs);
-=======
-  create: async (taskId: string, content: string, taskType: 'task' | 'installation' = 'task') => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-    const table = taskType === 'task' ? 'task_comments' : 'installation_comments';
-    const { data, error } = await supabase.from(table).insert([{ task_id: taskId, author_id: user.id, content }]).select().single();
-    return handle(data, error);
-  },
-};
-
-// Chats API
-export const chatsApi = {
-  getAll: async () => {
-    const { data, error } = await supabase.from('chats').select('*, last_message:last_message_id(*), participants:chat_participants(user:user_id(*))').order('updated_at', { ascending: false });
-    return handle(data, error);
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
   },
   getById: async (id: string) => {
-    const { data, error } = await supabase.from('chats').select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('jobs').select('*').eq('id', id).single();
     return handle(data, error);
   },
+  startInChat: async (chatId: string, payload: Record<string, unknown>) => {
+    const { authUser, user } = await getCurrentProfile();
+    const startedAt = new Date().toISOString();
+    const record = await insertJobRecord({
+      chat_id: chatId,
+      engineer_id: user?.id || authUser.id,
+      address: String(payload.address || ''),
+      district: payload.district,
+      sk_name: payload.sk_name,
+      sk_count: payload.sk_count,
+      servisnyy_id: payload.servisnyy_id,
+      lat: payload.lat,
+      lng: payload.lng,
+      status: 'active',
+      started_at: startedAt,
+      planned_duration_hours: payload.planned_duration_hours ?? null,
+    });
+    return record;
+  },
+  confirm: async (jobId: string) => {
+    const { data, error } = await supabase
+      .from('jobs')
+      .update({ status: 'active', confirmed_at: new Date().toISOString() })
+      .eq('id', jobId)
+      .select('*')
+      .single();
+    return handle(data, error);
+  },
+  finish: async (jobId: string) => {
+    const { data, error } = await supabase
+      .from('jobs')
+      .update({ status: 'done', finished_at: new Date().toISOString() })
+      .eq('id', jobId)
+      .select('*')
+      .single();
+    return handle(data, error);
+  },
+  remove: async (jobId: string) => {
+    const { error } = await supabase.from('jobs').delete().eq('id', jobId);
+    if (error) throw error;
+    return true;
+  },
+  subscribeChat: (chatId: string, callback: () => void) =>
+    supabase
+      .channel(`jobs-chat-${chatId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'jobs', filter: `chat_id=eq.${chatId}` },
+        () => callback()
+      )
+      .subscribe(),
   createChat: async (name: string, type: string = 'direct') => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
@@ -4093,4 +4194,39 @@ export const sitesApi = {
     const { data, error } = await supabase.from('sites').update(updates).eq('id', id).select().single();
     return handle(data, error);
   },
+};
+
+export const notificationsApi = {
+  pullPending: async (limit = 20) => {
+    const { data, error } = await supabase
+      .from('notification_queue')
+      .select('*')
+      .eq('is_read', false)
+      .order('created_at', { ascending: true })
+      .limit(limit);
+    if (error) {
+      if (isRelationMissingError(error) || isPermissionDeniedError(error)) {
+        return [];
+      }
+      throw error;
+    }
+    return (data || []) as any[];
+  },
+  markRead: async (ids: string[]) => {
+    if (!ids.length) return;
+    const { error } = await supabase
+      .from('notification_queue')
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .in('id', ids);
+    if (error && !isRelationMissingError(error) && !isPermissionDeniedError(error)) {
+      throw error;
+    }
+  },
+};
+
+export const chatsApi = chatApi;
+export const purchaseRequestApi = purchaseRequestsApi;
+export const avrApi = tasksAvrApi;
+export const equipmentChangesApi = {
+  getAllByTask: async (_taskId: string) => [],
 };

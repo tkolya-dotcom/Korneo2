@@ -1,13 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-<<<<<<< HEAD
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authApi, usersApi, supabase, withTimeout } from '@/src/lib/supabase';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { authApi, supabase, usersApi } from '@/src/lib/supabase';
 import { initializePushNotifications, unregisterDeviceFromPush } from '@/src/lib/pushNotifications';
 
 export type UserRole = 'worker' | 'engineer' | 'manager' | 'deputy_head' | 'admin' | 'support';
-=======
-import { authApi, usersApi, supabase } from '@/src/lib/supabase';
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
 
 export const ROLES = {
   MANAGER: 'manager',
@@ -21,7 +16,7 @@ type User = {
   id: string;
   email: string;
   name: string;
-  role: 'manager' | 'worker' | 'admin';
+  role: UserRole;
   is_online?: boolean;
 };
 
@@ -31,8 +26,8 @@ type AuthContextValue = {
   session: any;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  login: (email: string, password: string) => Promise<{ user: User; token: string }>;
-  register: (email: string, password: string, name: string, role: string) => Promise<{ user: User; token: string }>;
+  login: (email: string, password: string) => Promise<{ user: User; token: string | null }>;
+  register: (email: string, password: string, name: string, role: string) => Promise<{ user: User; token: string | null }>;
   logout: () => Promise<void>;
   isManager: boolean;
   isWorker: boolean;
@@ -40,13 +35,34 @@ type AuthContextValue = {
   isEngineer: boolean;
   canCreateTasks: boolean;
   canApproveRequests: boolean;
+  isElevatedUser: boolean;
+  canCreatePurchaseRequests: boolean;
+  canViewWarehouse: boolean;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const normalizeRole = (value: unknown): UserRole => {
+  const role = String(value || 'worker').trim().toLowerCase();
+  if (role === 'manager' || role === 'admin' || role === 'worker' || role === 'engineer' || role === 'deputy_head' || role === 'support') {
+    return role;
+  }
+  return 'worker';
+};
+
+const normalizeUser = (raw: any): User => ({
+  id: String(raw?.id || ''),
+  email: String(raw?.email || ''),
+  name: String(raw?.name || raw?.email?.split('@')?.[0] || 'Пользователь'),
+  role: normalizeRole(raw?.role),
+  is_online: Boolean(raw?.is_online),
+});
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
   return context;
 };
 
@@ -57,189 +73,117 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
-    const init = async () => {
-      const { data: { session: s } } = await supabase.auth.getSession();
-      setSession(s);
-      if (s?.access_token) {
-        try {
-          const data = await authApi.getMe();
-          setUser(data.user);
-        } catch { setUser(null); }
-      }
-      if (mounted) setLoading(false);
-    };
-    init();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, s) => {
-      setSession(s);
-      if (!s?.access_token) { setUser(null); return; }
+
+    const hydrate = async () => {
       try {
-        const data = await authApi.getMe();
-<<<<<<< HEAD
-        if (!mounted) return true;
-        const normalizedUser = normalizeUserProfile(data.user as User, authUser);
-        setUser(normalizedUser);
-        await saveCachedUser(authUser.id, normalizedUser);
-        usersApi.heartbeat();
-        // Initialize push notifications
-        await initializePushNotifications(normalizedUser.id);
-        return true;
-      } catch (error) {
-        console.error('Error getting user profile:', error);
-        const shouldClearSession = isAuthSessionError(error);
-        if (shouldClearSession) {
-          try {
-            await signOutLocalFirst();
-          } catch (signOutError) {
-            console.warn('Failed to clear local session after auth error:', signOutError);
-          }
-          if (!mounted) return false;
+        const { data } = await supabase.auth.getSession();
+        if (!mounted) {
+          return;
+        }
+        const currentSession = data?.session ?? null;
+        setSession(currentSession);
+
+        if (!currentSession?.access_token) {
           setUser(null);
-          return false;
+          return;
         }
 
-        if (!mounted) return true;
-        const cached = await getCachedUser(authUser);
-        if (cached) {
-          setUser(cached);
-        } else {
-          const fallback = normalizeUserProfile(buildAuthFallbackUser(authUser), authUser);
-          setUser(fallback);
-          await saveCachedUser(authUser.id, fallback);
+        const me = await authApi.getMe();
+        if (!mounted) {
+          return;
         }
-        usersApi.heartbeat();
-        return true;
-      }
-    };
-
-    const init = async () => {
-      try {
-        await ensureBootstrapVersion();
-        let restoredSession: any = null;
-        try {
-          const sessionResponse = await withTimeout(supabase.auth.getSession(), 'restore session', 2200);
-          restoredSession = sessionResponse?.data?.session ?? null;
-        } catch (sessionError) {
-          console.warn('Session restore failed, continue as logged out:', sessionError);
-        }
-        if (!mounted) return;
-
-        setSession(restoredSession);
-        if (restoredSession?.user) {
-          const profileLoaded = await loadProfile(restoredSession.user);
-          if (!profileLoaded && mounted) {
-            setSession(null);
-          }
-        } else if (mounted) {
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('Error restoring session:', error);
+        const normalized = normalizeUser(me?.user);
+        setUser(normalized);
+        await initializePushNotifications(normalized.id);
+      } catch {
         if (mounted) {
-          setSession(null);
           setUser(null);
+          setSession(null);
         }
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
-    void init();
+    void hydrate();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
       setSession(nextSession ?? null);
-      if (!nextSession?.user) {
+      if (!nextSession?.access_token) {
         setUser(null);
         return;
       }
-      const profileLoaded = await loadProfile(nextSession.user);
-      if (!profileLoaded && mounted) {
-        setSession(null);
+
+      try {
+        const me = await authApi.getMe();
+        const normalized = normalizeUser(me?.user);
+        setUser(normalized);
+        await initializePushNotifications(normalized.id);
+      } catch {
+        setUser(null);
       }
-=======
-        setUser(data.user);
-      } catch { setUser(null); }
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
     });
-    return () => { mounted = false; subscription.unsubscribe(); };
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     const data = await authApi.login(email, password);
-<<<<<<< HEAD
-    const authUser =
-      (data.session?.user as AuthMetadataUser | undefined) ||
-      ({ id: (data.user as User | undefined)?.id, email } as AuthMetadataUser);
-    const normalizedUser = normalizeUserProfile(data.user as User, authUser);
-    if (data.session) {
-      setSession(data.session);
-    } else {
-      try {
-        const restored = await withTimeout(supabase.auth.getSession(), 'restore session after sign in', 5000);
-        setSession(restored?.data?.session ?? null);
-      } catch (error) {
-        console.warn('Session restore after sign in failed:', error);
-      }
-    }
-    setUser(normalizedUser);
-    await saveCachedUser(normalizedUser.auth_user_id || normalizedUser.id, normalizedUser);
-    usersApi.heartbeat();
-    // Initialize push notifications after successful login
-    await initializePushNotifications(normalizedUser.id);
-=======
-    setUser(data.user);
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
-    return data;
+    const normalized = normalizeUser(data.user);
+    setUser(normalized);
+    const refreshed = await supabase.auth.getSession();
+    setSession(refreshed?.data?.session ?? null);
+    await initializePushNotifications(normalized.id);
+    return { token: data.token || null, user: normalized };
   };
 
   const register = async (email: string, password: string, name: string, role: string) => {
     const data = await authApi.register(email, password, name, role);
-    setUser(data.user);
-    return data;
+    const normalized = normalizeUser(data.user);
+    setUser(normalized);
+    const refreshed = await supabase.auth.getSession();
+    setSession(refreshed?.data?.session ?? null);
+    return { token: data.token || null, user: normalized };
   };
 
   const logout = async () => {
-<<<<<<< HEAD
     try {
       await usersApi.markOffline();
     } catch {}
-
-    // Unregister from push notifications
     if (user?.id) {
       await unregisterDeviceFromPush(user.id);
     }
-
-    try {
-      await signOutLocalFirst();
-    } catch (error) {
-      console.warn('Sign out error:', error);
-    } finally {
-      setUser(null);
-      setSession(null);
-    }
-=======
-    try { await usersApi.markOffline(); } catch {}
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
->>>>>>> 8e64d59caf785307e6286010bb536392348ff67e
   };
 
-  return (
-    <AuthContext.Provider value={{
-      user, loading, session,
-      signIn: async (email: string, password: string) => { await login(email, password); },
-      signOut: logout,
-      login, register, logout,
-      isManager: user?.role === 'manager' || user?.role === 'admin',
-      isWorker: user?.role === 'worker',
-      isManagerOrHigher: ['manager', 'admin', 'deputy_head'].includes(user?.role || ''),
-      isEngineer: user?.role === 'engineer',
-      canCreateTasks: ['manager', 'admin', 'deputy_head'].includes(user?.role || ''),
-      canApproveRequests: ['manager', 'admin'].includes(user?.role || ''),
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = useMemo<AuthContextValue>(() => ({
+    user,
+    loading,
+    session,
+    signIn: async (email: string, password: string) => {
+      await login(email, password);
+    },
+    signOut: logout,
+    login,
+    register,
+    logout,
+    isManager: user?.role === 'manager' || user?.role === 'admin',
+    isWorker: user?.role === 'worker',
+    isManagerOrHigher: ['manager', 'admin', 'deputy_head'].includes(user?.role || ''),
+    isEngineer: user?.role === 'engineer',
+    canCreateTasks: ['manager', 'admin', 'deputy_head'].includes(user?.role || ''),
+    canApproveRequests: ['manager', 'admin'].includes(user?.role || ''),
+    isElevatedUser: ['manager', 'admin', 'deputy_head'].includes(user?.role || ''),
+    canCreatePurchaseRequests: ['manager', 'admin', 'deputy_head', 'engineer'].includes(user?.role || ''),
+    canViewWarehouse: ['manager', 'admin', 'deputy_head', 'engineer'].includes(user?.role || ''),
+  }), [user, loading, session]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
